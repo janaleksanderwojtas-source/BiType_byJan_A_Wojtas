@@ -24,15 +24,16 @@
   <div class="decor-grid-bg"></div>
 
   <!-- Header Navigation -->
-  <header class="main-header">
+  <header class="main-header" id="main-header" style="display: none;">
     <div class="logo-container">
       <div class="logo-matrix">BITYPE</div>
       <canvas id="logo-canvas" width="150" height="30"></canvas>
-      <div class="logo-text">BiType</div>
+      <div class="logo-text">BiType — Jan A. Wojta<a href="https://issuu.com/janaleksanderwojtas/docs/no_glyph_72b80e6da3b2b6" target="_blank" class="no-glyph-link"><img class="no-glyph-inline" src="assets/logo_s.png" alt="ś" /></a></div>
     </div>
     
     <nav class="main-nav">
-      <a href="#creator" class="nav-link active" data-target="creator">CREATOR</a>
+      <a href="#startup" class="nav-link" id="nav-mode-switch" data-target="startup">CHANGE MODE</a>
+      <a href="#creator" class="nav-link" id="nav-creator-link" data-target="creator">CREATOR</a>
       <a href="#font" class="nav-link" data-target="font">THE FONT</a>
       <a href="#about" class="nav-link" data-target="about">ABOUT</a>
     </nav>
@@ -41,8 +42,526 @@
   <!-- Main Container -->
   <main class="content-container">
 
+    <!-- ================= PAGE 0: STARTUP LANDING ================= -->
+    <section id="page-startup" class="page-section active" style="position: relative;">
+      <!-- Matrix rain background canvas -->
+      <canvas id="matrix-bg-canvas" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: -1; opacity: 0; transition: opacity 1.5s ease-in-out;"></canvas>
+      <div class="startup-container" style="position: relative; z-index: 1;">
+        <div class="startup-logo-container">
+          <div class="startup-logo-matrix">BITYPE</div>
+          <div class="startup-subtitle">
+            BiType — Jan A. Wojta<a href="https://issuu.com/janaleksanderwojtas/docs/no_glyph_72b80e6da3b2b6" target="_blank" class="no-glyph-link"><img class="no-glyph-inline" src="assets/logo_s.png" alt="ś" /></a>
+          </div>
+          <div class="startup-tagline" style="font-size: 11px; font-weight: 500; letter-spacing: 0.25em; text-transform: uppercase; color: var(--color-text-secondary); margin-top: 1rem; opacity: 0.7; font-family: var(--font-mono); text-align: center;">
+            you will understand in due time...
+          </div>
+        </div>
+        
+        <div class="startup-modes-grid">
+          <!-- Guided Builder Card -->
+          <div class="startup-card" id="card-guided-builder">
+            <div class="card-badge">RECOMMENDED</div>
+            <div class="card-icon"><i class="ti ti-wizard"></i></div>
+            <h3 class="card-title">GUIDED BUILDER</h3>
+            <p class="card-desc">First time? Walk through a simple 5-step wizard to choose, customize, trace and generate your custom binary glyphs.</p>
+            <button class="btn btn-primary w-100 mt-auto" id="btn-start-guided">START GUIDED FLOW</button>
+          </div>
+          
+          <!-- Advanced Creator Card -->
+          <div class="startup-card" id="card-advanced-creator">
+            <div class="card-badge">FULL POWER</div>
+            <div class="card-icon"><i class="ti ti-layout-dashboard"></i></div>
+            <h3 class="card-title">ADVANCED CREATOR</h3>
+            <p class="card-desc">Access the complete typography workspace. Edit any glyph cell directly, load and save presets, and customize advanced borders/geometry.</p>
+            <button class="btn btn-secondary w-100 mt-auto" id="btn-start-advanced">USE ADVANCED CREATOR</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= PAGE 4: GUIDED BUILDER ================= -->
+    <section id="page-guided" class="page-section">
+      <div class="guided-container">
+        <!-- Step Progress Indicator -->
+        <div class="guided-steps-bar">
+          <div class="step-indicator active" data-step="1" id="step-ind-1">
+            <span class="step-num">01</span>
+            <span class="step-name">GLYPH SOURCE</span>
+          </div>
+          <div class="step-connector"></div>
+          <div class="step-indicator" data-step="2" id="step-ind-2">
+            <span class="step-num">02</span>
+            <span class="step-name">GLYPH 1 (BAR)</span>
+          </div>
+          <div class="step-connector"></div>
+          <div class="step-indicator" data-step="3" id="step-ind-3">
+            <span class="step-num">03</span>
+            <span class="step-name">GLYPH 0 (CIRCLE)</span>
+          </div>
+          <div class="step-connector"></div>
+          <div class="step-indicator" data-step="4" id="step-ind-4">
+            <span class="step-num">04</span>
+            <span class="step-name">APPEARANCE</span>
+          </div>
+          <div class="step-connector"></div>
+          <div class="step-indicator" data-step="5" id="step-ind-5">
+            <span class="step-num">05</span>
+            <span class="step-name">GENERATE</span>
+          </div>
+        </div>
+
+        <div class="guided-step-content-wrapper">
+          <!-- ================= STEP 1: GLYPH SOURCE ================= -->
+          <div class="guided-step-pane active" id="guided-pane-1">
+            <div class="step-header">
+              <h2>CHOOSE YOUR GLYPH SOURCE</h2>
+              <p>Select how you want to represent the binary cells (1s and 0s) in your custom typeface.</p>
+            </div>
+            
+            <div class="source-cards-grid">
+              <div class="source-card" data-source="font" id="source-card-font">
+                <div class="source-icon"><i class="ti ti-typography"></i></div>
+                <h4>Use a Font</h4>
+                <p>Pick characters from a library font (e.g. Space Mono or Courier) or upload your own TTF/OTF font file.</p>
+              </div>
+              <div class="source-card" data-source="image" id="source-card-image">
+                <div class="source-icon"><i class="ti ti-photo"></i></div>
+                <h4>Upload Images</h4>
+                <p>Upload raster images (PNG, JPG) and automatically convert/trace them into vector paths for each cell state.</p>
+              </div>
+              <div class="source-card" data-source="draw" id="source-card-draw">
+                <div class="source-icon"><i class="ti ti-pencil"></i></div>
+                <h4>Draw Your Own</h4>
+                <p>Use the default geometric system (vertical bars and circle rings) and adjust their stem weights.</p>
+              </div>
+            </div>
+            
+            <div class="step-footer mt-2">
+              <button class="btn btn-secondary btn-back-startup" id="guided-back-startup-1">BACK TO START</button>
+              <button class="btn btn-primary btn-next-step" id="guided-next-1" disabled>CONTINUE <i class="ti ti-arrow-right"></i></button>
+            </div>
+          </div>
+
+          <!-- ================= STEP 2: GLYPH 1 (BAR) ================= -->
+          <div class="guided-step-pane" id="guided-pane-2">
+            <div class="step-header">
+              <h2>CUSTOMIZE GLYPH 1 (ACTIVE CELLS)</h2>
+              <p class="guided-source-desc-1" id="guided-source-desc-1">Upload an image or select a character to represent cell state '1'.</p>
+            </div>
+            
+            <div class="guided-editor-layout">
+              <!-- Left side: inputs -->
+              <div class="guided-editor-inputs">
+                <!-- Image upload controls (visible if image source chosen) -->
+                <div class="guided-source-ctrl-image" id="guided-ctrl-image-1" style="display: none;">
+                  <label class="section-label">IMAGE DROPZONE (GLYPH 1)</label>
+                  <div class="guided-dropzone" id="guided-dropzone-1">
+                    <input type="file" id="guided-file-1" accept="image/*" style="display: none;">
+                    <i class="ti ti-cloud-upload"></i>
+                    <span>Drag and drop image here or click to browse</span>
+                    <span class="file-name-display" id="guided-file-name-1">No file selected</span>
+                  </div>
+                  
+                  <div class="control-group mt-1">
+                    <label class="section-label">CONTRAST THRESHOLD</label>
+                    <div class="slider-group">
+                      <div class="slider-label-val">
+                        <span>Binarization Contrast Threshold:</span>
+                        <span id="guided-val-threshold-1">50</span>
+                      </div>
+                      <input type="range" id="guided-input-threshold-1" min="0" max="100" step="1" value="50">
+                    </div>
+                  </div>
+                  
+                  <!-- Contrast warning alert -->
+                  <div class="guided-alert warning" id="guided-alert-contrast-1" style="display: none;">
+                    <i class="ti ti-alert-triangle"></i>
+                    <span><strong>LOW CONTRAST WARNING:</strong> Extreme contrast threshold values may cause shapes to disappear or blur. We recommend keeping this between 30 and 70 for optimal vector tracing.</span>
+                  </div>
+                </div>
+
+                <!-- Font inputs (visible if font source chosen) -->
+                <div class="guided-source-ctrl-font" id="guided-ctrl-font-1" style="display: none;">
+                  <label class="section-label">FONT CONFIGURATION (GLYPH 1)</label>
+                  <div class="form-row">
+                    <div class="form-col">
+                      <label class="field-label">Font Family</label>
+                      <select id="guided-select-font-1">
+                        <option value="'Space Mono', monospace">Space Mono</option>
+                        <option value="monospace">System Monospace</option>
+                        <option value="Courier New, monospace">Courier New</option>
+                        <option value="Arial, sans-serif">Arial</option>
+                        <option value="Georgia, serif">Georgia</option>
+                        <option value="Impact, sans-serif">Impact</option>
+                      </select>
+                    </div>
+                  </div>
+                  
+                  <div class="form-row mt-1">
+                    <div class="form-col">
+                      <label class="field-label">Upload Font File</label>
+                      <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <label class="btn btn-tertiary" style="cursor: pointer; display: flex; align-items: center; justify-content: center; margin: 0; padding: 0.4rem 0.5rem; height: 32px; font-size: 10px; flex: 1;">
+                          <i class="ti ti-upload"></i> UPLOAD FONT
+                          <input type="file" id="guided-font-upload-1" accept=".ttf,.otf,.woff,.woff2" style="display: none;">
+                        </label>
+                        <span id="guided-font-name-1" style="font-size: 10px; color: var(--color-text-secondary); max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">No file</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="form-row mt-1">
+                    <div class="form-col">
+                      <label class="field-label">Glyph Character</label>
+                      <input type="text" id="guided-char-input-1" value="1" maxlength="1" class="text-input-center">
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Draw/Geometric inputs (visible if draw source chosen) -->
+                <div class="guided-source-ctrl-draw" id="guided-ctrl-draw-1" style="display: none;">
+                  <label class="section-label">GEOMETRIC PROPERTIES (GLYPH 1)</label>
+                  <div class="control-group">
+                    <div class="slider-group">
+                      <div class="slider-label-val">
+                        <span>Stem weight ratio:</span>
+                        <span id="guided-val-stem-1">0.25</span>
+                      </div>
+                      <input type="range" id="guided-input-stem-1" min="0.05" max="0.65" step="0.01" value="0.25">
+                    </div>
+                  </div>
+                  <div class="info-box mt-1">
+                    Glyph 1 represents the active cell state. By default, it draws a solid vertical bar with customizable stem thickness.
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Right side: real-time vector preview -->
+              <div class="guided-editor-preview">
+                <label class="section-label">REAL-TIME VECTOR PREVIEW</label>
+                <div class="vector-preview-box">
+                  <div class="vector-canvas-wrapper" id="guided-vector-canvas-1" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background-color: #0d0d0d; border: 1px solid var(--color-border-base);">
+                    <!-- SVG dynamic preview output -->
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="step-footer mt-2">
+              <button class="btn btn-secondary btn-prev-step" id="guided-prev-btn-2"><i class="ti ti-arrow-left"></i> BACK</button>
+              <button class="btn btn-primary btn-next-step" id="guided-next-2">CONFIRM GLYPH 1</button>
+            </div>
+          </div>
+
+          <!-- ================= STEP 3: GLYPH 0 (CIRCLE) ================= -->
+          <div class="guided-step-pane" id="guided-pane-3">
+            <div class="step-header">
+              <h2>CUSTOMIZE GLYPH 0 (INACTIVE CELLS)</h2>
+              <p class="guided-source-desc-0" id="guided-source-desc-0">Upload an image or select a character to represent cell state '0'.</p>
+            </div>
+            
+            <div class="guided-editor-layout">
+              <!-- Left side: inputs -->
+              <div class="guided-editor-inputs">
+                <!-- Image upload controls (visible if image source chosen) -->
+                <div class="guided-source-ctrl-image" id="guided-ctrl-image-0" style="display: none;">
+                  <label class="section-label">IMAGE DROPZONE (GLYPH 0)</label>
+                  <div class="guided-dropzone" id="guided-dropzone-0">
+                    <input type="file" id="guided-file-0" accept="image/*" style="display: none;">
+                    <i class="ti ti-cloud-upload"></i>
+                    <span>Drag and drop image here or click to browse</span>
+                    <span class="file-name-display" id="guided-file-name-0">No file selected</span>
+                  </div>
+                  
+                  <div class="control-group mt-1">
+                    <label class="section-label">CONTRAST THRESHOLD</label>
+                    <div class="slider-group">
+                      <div class="slider-label-val">
+                        <span>Binarization Contrast Threshold:</span>
+                        <span id="guided-val-threshold-0">50</span>
+                      </div>
+                      <input type="range" id="guided-input-threshold-0" min="0" max="100" step="1" value="50">
+                    </div>
+                  </div>
+                  
+                  <!-- Contrast warning alert -->
+                  <div class="guided-alert warning" id="guided-alert-contrast-0" style="display: none;">
+                    <i class="ti ti-alert-triangle"></i>
+                    <span><strong>LOW CONTRAST WARNING:</strong> Extreme contrast threshold values may cause shapes to disappear or blur. We recommend keeping this between 30 and 70 for optimal vector tracing.</span>
+                  </div>
+                </div>
+
+                <!-- Font inputs (visible if font source chosen) -->
+                <div class="guided-source-ctrl-font" id="guided-ctrl-font-0" style="display: none;">
+                  <label class="section-label">FONT CONFIGURATION (GLYPH 0)</label>
+                  <div class="form-row">
+                    <div class="form-col">
+                      <label class="field-label">Font Family</label>
+                      <select id="guided-select-font-0">
+                        <option value="'Space Mono', monospace">Space Mono</option>
+                        <option value="monospace">System Monospace</option>
+                        <option value="Courier New, monospace">Courier New</option>
+                        <option value="Arial, sans-serif">Arial</option>
+                        <option value="Georgia, serif">Georgia</option>
+                        <option value="Impact, sans-serif">Impact</option>
+                      </select>
+                    </div>
+                  </div>
+                  
+                  <div class="form-row mt-1">
+                    <div class="form-col">
+                      <label class="field-label">Upload Font File</label>
+                      <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <label class="btn btn-tertiary" style="cursor: pointer; display: flex; align-items: center; justify-content: center; margin: 0; padding: 0.4rem 0.5rem; height: 32px; font-size: 10px; flex: 1;">
+                          <i class="ti ti-upload"></i> UPLOAD FONT
+                          <input type="file" id="guided-font-upload-0" accept=".ttf,.otf,.woff,.woff2" style="display: none;">
+                        </label>
+                        <span id="guided-font-name-0" style="font-size: 10px; color: var(--color-text-secondary); max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">No file</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="form-row mt-1">
+                    <div class="form-col">
+                      <label class="field-label">Glyph Character</label>
+                      <input type="text" id="guided-char-input-0" value="0" maxlength="1" class="text-input-center">
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Draw/Geometric inputs (visible if draw source chosen) -->
+                <div class="guided-source-ctrl-draw" id="guided-ctrl-draw-0" style="display: none;">
+                  <label class="section-label">GEOMETRIC PROPERTIES (GLYPH 0)</label>
+                  <div class="control-group">
+                    <div class="slider-group">
+                      <div class="slider-label-val">
+                        <span>Stem weight ratio:</span>
+                        <span id="guided-val-stem-0">0.25</span>
+                      </div>
+                      <input type="range" id="guided-input-stem-0" min="0.05" max="0.65" step="0.01" value="0.25">
+                    </div>
+                  </div>
+                  <div class="info-box mt-1">
+                    Glyph 0 represents the inactive cell state. By default, it draws a concentric circle ring shape with customizable stem thickness.
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Right side: real-time vector preview -->
+              <div class="guided-editor-preview">
+                <label class="section-label">REAL-TIME VECTOR PREVIEW</label>
+                <div class="vector-preview-box">
+                  <div class="vector-canvas-wrapper" id="guided-vector-canvas-0" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background-color: #0d0d0d; border: 1px solid var(--color-border-base);">
+                    <!-- SVG dynamic preview output -->
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="step-footer mt-2">
+              <button class="btn btn-secondary btn-prev-step" id="guided-prev-btn-3"><i class="ti ti-arrow-left"></i> BACK</button>
+              <button class="btn btn-primary btn-next-step" id="guided-next-3">CONFIRM GLYPH 0</button>
+            </div>
+          </div>
+
+          <!-- ================= STEP 4: CUSTOMIZE APPEARANCE ================= -->
+          <div class="guided-step-pane" id="guided-pane-4">
+            <div class="step-header">
+              <h2>CUSTOMIZE TYPEFACE GEOMETRY & STYLES</h2>
+              <p>Fine-tune cellular layouts, sizes, and coloring rules. Review the live rendering preview below.</p>
+            </div>
+            
+            <div class="guided-appearance-grid">
+              <!-- Left side: sliders and color inputs -->
+              <div class="guided-appearance-controls">
+                <div class="control-group">
+                  <label class="section-label">GEOMETRY</label>
+                  
+                  <div class="slider-group">
+                    <div class="slider-label-val">
+                      <span>Cell size (px):</span>
+                      <span id="guided-val-cell-size">48</span>
+                    </div>
+                    <input type="range" id="guided-input-cell-size" min="16" max="96" step="1" value="48">
+                  </div>
+
+                  <div class="slider-group">
+                    <div class="slider-label-val">
+                      <span>Cell padding (px):</span>
+                      <span id="guided-val-cell-padding">4</span>
+                    </div>
+                    <input type="range" id="guided-input-cell-padding" min="0" max="15" step="0.5" value="4">
+                  </div>
+
+                  <div class="slider-group">
+                    <div class="slider-label-val">
+                      <span>Letter spacing (px):</span>
+                      <span id="guided-val-letter-spacing">16</span>
+                    </div>
+                    <input type="range" id="guided-input-letter-spacing" min="0" max="64" step="1" value="16">
+                  </div>
+                </div>
+                
+                <div class="control-group border-top">
+                  <label class="section-label">COLORS</label>
+                  
+                  <div class="color-picker-row">
+                    <div class="color-col">
+                      <span class="color-label">Canvas Background</span>
+                      <div class="color-picker-wrapper">
+                        <input type="color" id="guided-color-bg" value="#0a0a0a">
+                        <span class="color-hex" id="guided-hex-bg">#0a0a0a</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="color-picker-row mt-1">
+                    <div class="color-col">
+                      <span class="color-label">Glyph 1 Color</span>
+                      <div class="color-picker-wrapper">
+                        <input type="color" id="guided-color-glyph1" value="#ffffff">
+                        <span class="color-hex" id="guided-hex-glyph1">#ffffff</span>
+                      </div>
+                    </div>
+                    <div class="color-col">
+                      <span class="color-label">Glyph 0 Color</span>
+                      <div class="color-picker-wrapper">
+                        <input type="color" id="guided-color-glyph0" value="#ffffff">
+                        <span class="color-hex" id="guided-hex-glyph0">#ffffff</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Monochrome warning box -->
+                <div class="guided-alert info mt-1" id="guided-alert-monochrome" style="display: none;">
+                  <i class="ti ti-info-circle"></i>
+                  <span><strong>COLOR LIMITATION NOTE:</strong> TrueType Font standard (.ttf) does not support multi-color glyphs. Your exported TTF will be monochrome using Glyph 1's color. If you need multi-color cells, download PNG or SVG formats in the next step.</span>
+                </div>
+                
+                <!-- Toggle Advanced Settings -->
+                <div class="control-group border-top">
+                  <button id="guided-btn-toggle-advanced" class="btn btn-tertiary w-100">SHOW ADVANCED GEOMETRY OPTIONS</button>
+                  
+                  <div id="guided-advanced-settings" style="display: none;" class="mt-1">
+                    <div class="toggle-row">
+                      <span class="field-label m-0">Outer Glyph Borders</span>
+                      <label class="switch">
+                        <input type="checkbox" id="guided-toggle-outer-borders" checked>
+                        <span class="slider-switch"></span>
+                      </label>
+                    </div>
+                    
+                    <div class="toggle-row mt-1">
+                      <span class="field-label m-0">Inner Cell Borders</span>
+                      <label class="switch">
+                        <input type="checkbox" id="guided-toggle-inner-borders">
+                        <span class="slider-switch"></span>
+                      </label>
+                    </div>
+
+                    <div class="toggle-row mt-1">
+                      <span class="field-label m-0">Cell Background Fill</span>
+                      <label class="switch">
+                        <input type="checkbox" id="guided-toggle-cell-bg">
+                        <span class="slider-switch"></span>
+                      </label>
+                    </div>
+                    
+                    <div class="color-picker-row mt-1">
+                      <div class="color-col">
+                        <span class="color-label">Border Color</span>
+                        <div class="color-picker-wrapper">
+                          <input type="color" id="guided-color-border" value="#222222">
+                          <span class="color-hex" id="guided-hex-border">#222222</span>
+                        </div>
+                      </div>
+                      <div class="color-col" id="guided-col-cell-bg-color" style="display: none;">
+                        <span class="color-label">Cell Fill Color</span>
+                        <div class="color-picker-wrapper">
+                          <input type="color" id="guided-color-cell-bg" value="#121212">
+                          <span class="color-hex" id="guided-hex-cell-bg">#121212</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Right side: live preview -->
+              <div class="guided-appearance-preview">
+                <div class="text-input-wrapper">
+                  <label class="field-label">EDIT SPECIMEN TEXT</label>
+                  <textarea id="guided-sample-text-area" rows="1" style="background-color: var(--color-bg-inner); border: 1px solid var(--color-border-base); color: var(--color-text-primary); text-transform: uppercase; margin-bottom: 0.75rem;">THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG</textarea>
+                </div>
+                
+                <label class="section-label">LIVE WORKSPACE PREVIEW</label>
+                <div class="canvas-viewport" id="guided-canvas-container" style="border: 1px solid var(--color-border-base); height: 130px; min-height: 0; max-width: 100%; width: 100%; box-sizing: border-box; overflow: hidden; padding: 0.5rem; background-color: #0a0a0a;">
+                  <div id="guided-svg-container" style="width: 100%; height: 100%; overflow: auto;"></div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="step-footer mt-2">
+              <button class="btn btn-secondary btn-prev-step" id="guided-prev-btn-4"><i class="ti ti-arrow-left"></i> BACK</button>
+              <button class="btn btn-primary btn-next-step" id="guided-next-4">CONFIRM STYLE</button>
+            </div>
+          </div>
+
+          <!-- ================= STEP 5: GENERATE & DOWNLOAD ================= -->
+          <div class="guided-step-pane" id="guided-pane-5">
+            <div class="step-header">
+              <h2>EXPORT YOUR TYPEFACE</h2>
+              <p>Your custom typeface is ready. Choose your desired output format below.</p>
+            </div>
+            
+            <div class="export-cards-grid">
+              <!-- TTF card -->
+              <div class="export-card">
+                <div class="export-card-icon"><i class="ti ti-download"></i></div>
+                <h3>TRUETYPE FONT (TTF)</h3>
+                <p>Download a standard desktop/web font file (.ttf) that you can install on Windows, Mac, or use in applications. Note: exported fonts are monochrome.</p>
+                <div class="guided-alert info mb-1" style="font-size: 11px; padding: 0.6rem 0.8rem; margin-top: 0.5rem; margin-bottom: 0.75rem;">
+                  <i class="ti ti-info-circle"></i>
+                  <span><strong>NOTE ON DOWNLOADS:</strong> Compiling custom TTF vector glyphs is CPU-intensive. If your browser prompts that the page is unresponsive, please click <strong>"WAIT"</strong>. Do not close or refresh; the font download will trigger automatically in a few seconds.</span>
+                </div>
+                <div class="form-row mb-1">
+                  <div class="form-col">
+                    <label class="field-label">Font Family Name</label>
+                    <input type="text" id="guided-input-font-name" value="BiType Guided" placeholder="FONT FAMILY NAME" maxlength="30" style="font-size: 11px; padding: 0.4rem 0.5rem; height: 32px; background-color: var(--color-bg-inner); border: 1px solid var(--color-border-base); color: var(--color-text-primary); text-transform: uppercase; margin-bottom: 0.5rem;">
+                  </div>
+                </div>
+                <button id="guided-btn-export-ttf" class="btn btn-primary w-100">DOWNLOAD TTF</button>
+              </div>
+
+              <!-- PNG card -->
+              <div class="export-card">
+                <div class="export-card-icon"><i class="ti ti-photo-down"></i></div>
+                <h3>IMAGE SHEET (PNG)</h3>
+                <p>Download a high-resolution raster image (.png) sheet of your custom alphabet configuration.</p>
+                <button id="guided-btn-export-png" class="btn btn-secondary w-100 mt-auto">DOWNLOAD PNG</button>
+              </div>
+
+              <!-- SVG card -->
+              <div class="export-card">
+                <div class="export-card-icon"><i class="ti ti-file-code"></i></div>
+                <h3>VECTOR SHEET (SVG)</h3>
+                <p>Download a scalable vector graphics file (.svg) sheet of your alphabet configuration, perfect for edits in Illustrator or Figma.</p>
+                <button id="guided-btn-export-svg" class="btn btn-secondary w-100 mt-auto">DOWNLOAD SVG</button>
+              </div>
+            </div>
+            
+            <div class="step-footer mt-2">
+              <button class="btn btn-secondary btn-prev-step" id="guided-prev-btn-5"><i class="ti ti-arrow-left"></i> BACK TO STYLING</button>
+              <button class="btn btn-primary btn-finished" id="guided-btn-finished">FINISH & HOME</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- ================= PAGE 1: CREATOR ================= -->
-    <section id="page-creator" class="page-section active">
+    <section id="page-creator" class="page-section">
       <div class="creator-grid">
         
         <!-- Left Panel: Glyph Selector, Designer & Presets -->
@@ -146,6 +665,17 @@
                   <div class="info-box">
                     Uploaded images will render in cells. Color overlay tints the image hue while keeping details perceptible.
                   </div>
+                  <div class="image-advice-box info-box" style="border-style: solid; border-color: var(--color-text-primary);">
+                    <strong class="section-label" style="color: var(--color-text-primary); margin-bottom: 0.5rem; display: block;">Image Advice & Guidelines:</strong>
+                    <ul class="styled-list" style="margin-left: 0; padding-left: 0; margin-bottom: 0.5rem;">
+                      <li style="font-size: 11px; margin-bottom: 0.35rem;"><strong>High-contrast images</strong> work best for tracing vector contours.</li>
+                      <li style="font-size: 11px; margin-bottom: 0.35rem;"><strong>Non-square images</strong> will be stretched/squeezed to fit the 1:1 cell aspect ratio.</li>
+                      <li style="font-size: 11px; margin-bottom: 0.35rem;">Pixels are <strong>binarized</strong> during rendering (light parts become background, dark parts become active color).</li>
+                    </ul>
+                    <p style="font-size: 11px; margin-top: 0.5rem; margin-bottom: 0;">
+                      Images are processed and converted into vector paths. Learn how <a href="#" id="link-svg-explanation" style="text-decoration: underline; color: var(--color-text-primary); font-weight: bold;">SVG Vector paths</a> are generated.
+                    </p>
+                  </div>
                   <div class="upload-zone">
                     <label class="upload-box" id="upload-box-1">
                       <input type="file" id="file-glyph-1" accept="image/*">
@@ -217,25 +747,38 @@
                 <input type="range" id="input-zoom" min="0.5" max="3" step="0.1" value="1" style="width: 80px; height: 3px; cursor: pointer;">
                 <span id="val-zoom" style="font-size: 10px; color: var(--color-text-secondary); min-width: 30px; text-align: right;">100%</span>
               </div>
+              
+              <!-- Vector Outlines Toggle Switch -->
+              <div class="vector-toggle-container" style="display: inline-flex; align-items: center; gap: 0.35rem; margin-right: 0.75rem; border-right: 1px solid var(--color-border-base); padding-right: 0.75rem; height: 20px;">
+                <label class="switch-control" style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 10px; font-weight: 700; color: var(--color-text-secondary); cursor: pointer; user-select: none;">
+                  <input type="checkbox" id="toggle-vector-preview" style="display: none;">
+                  <span class="custom-switch" style="width: 24px; height: 12px; background: #222; border: 1px solid #444; border-radius: 6px; display: inline-block; position: relative; transition: all 0.2s;">
+                    <span class="custom-switch-knob" style="width: 8px; height: 8px; background: #888; border-radius: 50%; display: block; position: absolute; top: 1px; left: 1px; transition: transform 0.2s, background 0.2s;"></span>
+                  </span>
+                  VECTOR OUTLINES
+                </label>
+              </div>
+
+              <button id="btn-copy-text" class="icon-btn" title="Copy Text"><i class="ti ti-copy"></i></button>
               <button id="btn-clear-text" class="icon-btn" title="Clear Text"><i class="ti ti-trash"></i></button>
               <button id="btn-toggle-fit" class="icon-btn" title="Toggle Aspect Fit"><i class="ti ti-arrows-maximize"></i></button>
             </div>
           </div>
           
           <div class="panel-body canvas-wrapper">
-            <!-- Tight Adaptive Canvas Grid Viewport (No A4 shape wrapper) -->
-            <div class="canvas-viewport" id="canvas-container">
-              <div id="editor-svg-container"></div>
-            </div>
-
-            <!-- Editable Text Area -->
-            <div class="text-input-wrapper">
+            <!-- Editable Text Area (Moved to top so users see it first) -->
+            <div class="text-input-wrapper" style="margin-bottom: 1rem;">
               <label class="field-label">SAMPLE TEXT (EDITABLE)</label>
               <textarea id="sample-text-area" rows="2">THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG</textarea>
               <div class="text-meta">
                 <span id="char-counter">0 characters</span>
                 <span class="blink-dot"></span>
               </div>
+            </div>
+
+            <!-- Tight Adaptive Canvas Grid Viewport -->
+            <div class="canvas-viewport" id="canvas-container">
+              <div id="editor-svg-container"></div>
             </div>
           </div>
         </div>
@@ -426,23 +969,16 @@
           
           <div class="weight-controller">
             <div class="weight-labels">
+              <span class="weight-label active" data-weight="Matrix">MATRIX</span>
               <span class="weight-label" data-weight="Thin">THIN</span>
               <span class="weight-label" data-weight="Light">LIGHT</span>
-              <span class="weight-label active" data-weight="Regular">REGULAR</span>
+              <span class="weight-label" data-weight="Regular">REGULAR</span>
               <span class="weight-label" data-weight="Bold">BOLD</span>
               <span class="weight-label" data-weight="Base">BASE</span>
-              <span class="weight-label" data-weight="Matrix">MATRIX</span>
             </div>
             
             <div class="slider-container-full">
-              <input type="range" id="weight-slider" min="1" max="6" step="1" value="3">
-            </div>
-            
-            <!-- Custom Installed Font Testing -->
-            <div class="installed-font-row mt-1" style="display: flex; gap: 0.75rem; align-items: center; border-top: 1px solid var(--color-border-base); padding-top: 1rem; margin-top: 1rem;">
-              <span class="field-label" style="margin: 0; white-space: nowrap; font-size: 10px; font-weight: 700; letter-spacing: 0.05em; color: var(--color-text-secondary);">TEST INSTALLED FONT:</span>
-              <input type="text" id="input-installed-font" placeholder="Enter font name (e.g. Arial, Courier New, Consolas)" style="font-size: 11px; padding: 0.4rem 0.5rem; flex: 1; height: 32px; background-color: var(--color-bg-inner); border: 1px solid var(--color-border-base); color: var(--color-text-primary);">
-              <button id="btn-use-installed-font" class="btn btn-secondary" style="padding: 0.4rem 0.75rem; height: 32px;">USE</button>
+              <input type="range" id="weight-slider" min="1" max="6" step="1" value="1">
             </div>
           </div>
 
@@ -577,118 +1113,172 @@
           <!-- Left Column: The Narrative -->
           <div class="about-text-content">
             
-            <div class="about-group">
-              <span class="system-code">01 / CONCEPT</span>
-              <h3>WHAT IS BITYPE?</h3>
-              <p>BiType is a speculative typeface system constructed entirely on binary logic. Instead of standard bezier contours, every letter, number, and punctuation mark is defined inside a 4x4 coordinate space containing exactly 16 cells.</p>
-              <p>Each cell holds either a <strong>1</strong> (active vertical stem) or a <strong>0</strong> (active circular ring). The typeface makes digital encoding visible, establishing a visual medium where letterforms double as raw data.</p>
-            </div>
-
-            <!-- Graphic Explanation Diagram -->
-            <div class="about-group border-top">
-              <span class="system-code">02 / GRAPHICAL MAP MATH</span>
-              <h3>GRID CODE SCHEMATIC</h3>
-              <div class="vector-diagram-wrapper">
-                <svg viewBox="0 0 700 240" class="vector-about-diagram" xmlns="http://www.w3.org/2000/svg">
-                  <!-- Grid coordinates -->
-                  <g transform="translate(40, 20)">
-                    <rect width="200" height="200" fill="#0d0d0d" stroke="#222222" stroke-width="1" />
-                    <!-- Sub-cells grid -->
-                    <line x1="50" y1="0" x2="50" y2="200" stroke="#1c1c1c" stroke-width="1" />
-                    <line x1="100" y1="0" x2="100" y2="200" stroke="#1c1c1c" stroke-width="1" />
-                    <line x1="150" y1="0" x2="150" y2="200" stroke="#1c1c1c" stroke-width="1" />
-                    <line x1="0" y1="50" x2="200" y2="50" stroke="#1c1c1c" stroke-width="1" />
-                    <line x1="0" y1="100" x2="200" y2="100" stroke="#1c1c1c" stroke-width="1" />
-                    <line x1="0" y1="150" x2="200" y2="150" stroke="#1c1c1c" stroke-width="1" />
-                    <!-- Coordinates label -->
-                    <text x="25" y="30" fill="#888888" font-family="monospace" font-size="10" text-anchor="middle">0</text>
-                    <text x="75" y="30" fill="#888888" font-family="monospace" font-size="10" text-anchor="middle">1</text>
-                    <text x="125" y="30" fill="#888888" font-family="monospace" font-size="10" text-anchor="middle">2</text>
-                    <text x="175" y="30" fill="#888888" font-family="monospace" font-size="10" text-anchor="middle">3</text>
-                    
-                    <text x="25" y="80" fill="#888888" font-family="monospace" font-size="10" text-anchor="middle">4</text>
-                    <text x="75" y="80" fill="#888888" font-family="monospace" font-size="10" text-anchor="middle">5</text>
-                    <text x="125" y="80" fill="#888888" font-family="monospace" font-size="10" text-anchor="middle">6</text>
-                    <text x="175" y="80" fill="#888888" font-family="monospace" font-size="10" text-anchor="middle">7</text>
-
-                    <text x="25" y="130" fill="#888888" font-family="monospace" font-size="10" text-anchor="middle">8</text>
-                    <text x="75" y="130" fill="#888888" font-family="monospace" font-size="10" text-anchor="middle">9</text>
-                    <text x="125" y="130" fill="#888888" font-family="monospace" font-size="10" text-anchor="middle">10</text>
-                    <text x="175" y="130" fill="#888888" font-family="monospace" font-size="10" text-anchor="middle">11</text>
-
-                    <text x="25" y="180" fill="#888888" font-family="monospace" font-size="10" text-anchor="middle">12</text>
-                    <text x="75" y="180" fill="#888888" font-family="monospace" font-size="10" text-anchor="middle">13</text>
-                    <text x="125" y="180" fill="#888888" font-family="monospace" font-size="10" text-anchor="middle">14</text>
-                    <text x="175" y="180" fill="#888888" font-family="monospace" font-size="10" text-anchor="middle">15</text>
-                    <text x="100" y="-8" fill="#ffffff" font-family="monospace" font-weight="bold" font-size="10" text-anchor="middle">4×4 INDEX PATTERN</text>
-                  </g>
-
-                  <!-- Connective arrow -->
-                  <path d="M 270, 120 L 320, 120" stroke="#888888" stroke-dasharray="4,4" marker-end="url(#arrow)" />
-                  <defs>
-                    <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                      <path d="M 0 0 L 10 5 L 0 10 z" fill="#888888"/>
-                    </marker>
-                  </defs>
-
-                  <!-- Representation values -->
-                  <g transform="translate(360, 20)">
-                    <!-- Bit 1 -->
-                    <rect x="0" y="20" width="100" height="100" fill="#0d0d0d" stroke="#222222" />
-                    <rect x="42" y="30" width="16" height="80" fill="#ffffff" />
-                    <text x="50" y="138" fill="#ffffff" font-family="monospace" font-weight="bold" font-size="11" text-anchor="middle">BIT = 1</text>
-                    <text x="50" y="152" fill="#888888" font-family="monospace" font-size="10" text-anchor="middle">(STEM BAR)</text>
-
-                    <!-- Bit 0 -->
-                    <rect x="140" y="20" width="100" height="100" fill="#0d0d0d" stroke="#222222" />
-                    <path d="M 190, 30 A 40 40 0 1 0 190, 110 A 40 40 0 1 0 190, 30 Z M 190, 50 A 20 20 0 1 1 190, 90 A 20 20 0 1 1 190, 50 Z" fill="#ffffff" fill-rule="evenodd" />
-                    <text x="190" y="138" fill="#ffffff" font-family="monospace" font-weight="bold" font-size="11" text-anchor="middle">BIT = 0</text>
-                    <text x="190" y="152" fill="#888888" font-family="monospace" font-size="10" text-anchor="middle">(CIRCLE RING)</text>
-                  </g>
-                </svg>
+          <div class="about-text-content">
+            
+            <details open class="about-accordion">
+              <summary><span class="system-code">01 / CONCEPT</span><h3>WHAT IS BITYPE?</h3></summary>
+              <div class="accordion-content">
+                <p>It's a <strong>typeface system</strong> built from just <strong>two shapes/glyphs</strong>. Instead of drawing letters by hand, every letter, number, and punctuation mark is created by arranging these two shapes inside a <strong>4×4 grid of 16 cells</strong>.</p>
+                <p>Each cell is either <strong>filled [1]</strong> (with your first shape) or <strong>empty [0]</strong> (showing your second shape). This filled-or-empty pattern creates the letter. The system makes data visible—your letters are essentially <strong>binary code made readable</strong>. But still... <strong>Only for those who know ;)</strong></p>
               </div>
-            </div>
+            </details>
 
-            <div class="about-group border-top">
-              <span class="system-code">03 / THREE IN ONE</span>
-              <h3>THE TRIPLE NATURE OF THE NAME</h3>
-              <ul class="styled-list">
-                <li><strong>Bi = 2 (Binary Code)</strong>: Drawn solely using 1s and 0s.</li>
-                <li><strong>Bi = 2 (2x2 Grid Squares)</strong>: A 4x4 grid is mathematically equivalent to four 2x2 grid blocks aligned together.</li>
-                <li><strong>Bi = 2 (Dual Typography Layers)</strong>: The letterform is built directly FROM typography (the 1s and 0s characters/shapes). You are always seeing and using two font layers at the exact same time.</li>
-              </ul>
-            </div>
+            <details class="about-accordion">
+              <summary><span class="system-code">02 / GRAPHICAL MAP MATH</span><h3>GRID CODE SCHEMATIC</h3></summary>
+              <div class="accordion-content">
+                <p>The math behind BiType relies on mapping a <strong>16-bit array</strong> to a <strong>4x4 spatial layout</strong>. Index 0 starts at the top-left, wrapping to the right, and ending at index 15 at the bottom-right. <strong>Active cells (1)</strong> draw stem bars; <strong>inactive cells (0)</strong> draw circular rings.</p>
+                <div class="vector-diagram-wrapper">
+                  <svg viewBox="0 0 700 240" class="vector-about-diagram" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Grid coordinates -->
+                    <g transform="translate(40, 20)">
+                      <rect width="200" height="200" fill="#0d0d0d" stroke="#222222" stroke-width="1" />
+                      <!-- Sub-cells grid -->
+                      <line x1="50" y1="0" x2="50" y2="200" stroke="#1c1c1c" stroke-width="1" />
+                      <line x1="100" y1="0" x2="100" y2="200" stroke="#1c1c1c" stroke-width="1" />
+                      <line x1="150" y1="0" x2="150" y2="200" stroke="#1c1c1c" stroke-width="1" />
+                      <line x1="0" y1="50" x2="200" y2="50" stroke="#1c1c1c" stroke-width="1" />
+                      <line x1="0" y1="100" x2="200" y2="100" stroke="#1c1c1c" stroke-width="1" />
+                      <line x1="0" y1="150" x2="200" y2="150" stroke="#1c1c1c" stroke-width="1" />
+                      <!-- Coordinates label -->
+                      <text x="25" y="30" fill="#888888" font-family="monospace" font-size="10" text-anchor="middle">0</text>
+                      <text x="75" y="30" fill="#888888" font-family="monospace" font-size="10" text-anchor="middle">1</text>
+                      <text x="125" y="30" fill="#888888" font-family="monospace" font-size="10" text-anchor="middle">2</text>
+                      <text x="175" y="30" fill="#888888" font-family="monospace" font-size="10" text-anchor="middle">3</text>
+                      
+                      <text x="25" y="80" fill="#888888" font-family="monospace" font-size="10" text-anchor="middle">4</text>
+                      <text x="75" y="80" fill="#888888" font-family="monospace" font-size="10" text-anchor="middle">5</text>
+                      <text x="125" y="80" fill="#888888" font-family="monospace" font-size="10" text-anchor="middle">6</text>
+                      <text x="175" y="80" fill="#888888" font-family="monospace" font-size="10" text-anchor="middle">7</text>
 
-            <div class="about-group border-top">
-              <span class="system-code">04 / CONTEXT & HYPOTHESIS</span>
-              <h3>DATA EXPOSURE & SURVEILLANCE</h3>
-              <p>Developed as a typography research project (2025–26), BiType operates within the theme of <strong>data exposure and surveillance</strong>.</p>
-              <blockquote>
-                "If data collection were made visible through your own image, would you recognise yourself as a tracked entity?"
-              </blockquote>
-              <p>In our modern ecosystem, data is constantly collected, parsed, and logged behind the scenes. BiType brings this process to light. It poses a visual hypothesis: text that appears to be encrypted patterns or binary static to an untrained eye becomes immediately legible once the user understands the 4x4 reading grid. The system is simultaneously hidden and fully exposed.</p>
-            </div>
+                      <text x="25" y="130" fill="#888888" font-family="monospace" font-size="10" text-anchor="middle">8</text>
+                      <text x="75" y="130" fill="#888888" font-family="monospace" font-size="10" text-anchor="middle">9</text>
+                      <text x="125" y="130" fill="#888888" font-family="monospace" font-size="10" text-anchor="middle">10</text>
+                      <text x="175" y="130" fill="#888888" font-family="monospace" font-size="10" text-anchor="middle">11</text>
 
-            <div class="about-group border-top">
-              <span class="system-code">05 / THE NO-DOWNLOAD CLAIM</span>
-              <h3>THE GRID IS THE FONT</h3>
-              <p>BiType makes a radical conceptual claim: <strong>it is the first font you can use without downloading a file.</strong></p>
-              <p>Because the font is purely defined by its binary mapping matrix, if you have any two images, shapes, or visual representations arranged in a 4x4 grid, you can construct the entire BiType alphabet. The grid itself is the system. The file is optional; the conceptual framework is universal.</p>
-            </div>
+                      <text x="25" y="180" fill="#888888" font-family="monospace" font-size="10" text-anchor="middle">12</text>
+                      <text x="75" y="180" fill="#888888" font-family="monospace" font-size="10" text-anchor="middle">13</text>
+                      <text x="125" y="180" fill="#888888" font-family="monospace" font-size="10" text-anchor="middle">14</text>
+                      <text x="175" y="180" fill="#888888" font-family="monospace" font-size="10" text-anchor="middle">15</text>
+                      <text x="100" y="-8" fill="#ffffff" font-family="monospace" font-weight="bold" font-size="10" text-anchor="middle">4×4 INDEX PATTERN</text>
+                    </g>
 
-            <div class="about-group border-top">
-              <span class="system-code">06 / PROCESS & PRODUCTION</span>
-              <h3>TECHNICAL NOTES</h3>
-              <p>The original fonts were generated programmatically using a custom python layout workflow. The parameters utilize UFO structure formats built via <code>defcon</code> and compiled to OpenType/TrueType files with <code>ufo2ft</code>.</p>
-              <p>Glyph coordinate math begins at a canvas boundary of 1000x1000 units (800 ascender, -200 descender). The 4x4 matrix spans coordinates from left margins of 100u, spacing each cell 200u width/height, applying a internal margins of 20u padding to prevent element overlap.</p>
-            </div>
+                    <!-- Connective arrow -->
+                    <path d="M 270, 120 L 320, 120" stroke="#888888" stroke-dasharray="4,4" marker-end="url(#arrow)" />
+                    <defs>
+                      <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                        <path d="M 0 0 L 10 5 L 0 10 z" fill="#888888"/>
+                      </marker>
+                    </defs>
 
-            <div class="about-group border-top">
-              <span class="system-code">07 / COLOR PRESERVATION</span>
-              <h3>COLOR FONTS & TECHNICAL LIMITATIONS</h3>
-              <p>While the BiType interface allows live color previewing, standard exported TrueType fonts (.ttf) are restricted to monochrome letterforms. This is a technical boundary of the core OpenType standard.</p>
-              <p>To preserve custom colors or image tints inside a standalone font file, advanced formats like OpenType-SVG or COLR/CPAL tables are required. Because client-side compilers (such as opentype.js) do not natively compile these color-embedded font tables, downloaded files will always display the binarized vector contours of your custom glyphs in monochrome. To keep full color fidelity, please use the high-resolution vector SVG/PNG export options.</p>
-            </div>
+                    <!-- Representation values -->
+                    <g transform="translate(360, 20)">
+                      <!-- Bit 1 -->
+                      <rect x="0" y="20" width="100" height="100" fill="#0d0d0d" stroke="#222222" />
+                      <rect x="42" y="30" width="16" height="80" fill="#ffffff" />
+                      <text x="50" y="138" fill="#ffffff" font-family="monospace" font-weight="bold" font-size="11" text-anchor="middle">BIT = 1</text>
+                      <text x="50" y="152" fill="#888888" font-family="monospace" font-size="10" text-anchor="middle">(STEM BAR)</text>
+
+                      <!-- Bit 0 -->
+                      <rect x="140" y="20" width="100" height="100" fill="#0d0d0d" stroke="#222222" />
+                      <path d="M 190, 30 A 40 40 0 1 0 190, 110 A 40 40 0 1 0 190, 30 Z M 190, 50 A 20 20 0 1 1 190, 90 A 20 20 0 1 1 190, 50 Z" fill="#ffffff" fill-rule="evenodd" />
+                      <text x="190" y="138" fill="#ffffff" font-family="monospace" font-weight="bold" font-size="11" text-anchor="middle">BIT = 0</text>
+                      <text x="190" y="152" fill="#888888" font-family="monospace" font-size="10" text-anchor="middle">(CIRCLE RING)</text>
+                    </g>
+                  </svg>
+                </div>
+              </div>
+            </details>
+
+            <details class="about-accordion">
+              <summary><span class="system-code">03 / THREE IN ONE</span><h3>THE TRIPLE NATURE OF THE NAME</h3></summary>
+              <div class="accordion-content">
+                <ul class="styled-list">
+                  <li><strong>Bi = 2 (Binary Code)</strong>: Drawn solely using <strong>1s and 0s</strong>.</li>
+                  <li><strong>Bi = 2 (2x2 Grid Blocks)</strong>: A 4x4 grid is mathematically equivalent to four <strong>2x2 grid blocks</strong> aligned together.</li>
+                  <li><strong>Bi = 2 (Dual Typography Layers)</strong>: The letterform is built directly FROM typography (the 1s and 0s characters/shapes). You are always seeing and using <strong>two font layers</strong> at the exact same time.</li>
+                </ul>
+              </div>
+            </details>
+
+            <details class="about-accordion">
+              <summary><span class="system-code">04 / CONTEXT & HYPOTHESIS</span><h3>DATA EXPOSURE & SURVEILLANCE</h3></summary>
+              <div class="accordion-content">
+                <p>BiType was born in 2026 to make a point about how much we are <strong>being watched online</strong>. If all the hidden tracking cookies and data logs were drawn right on your face, would you notice them?</p>
+                <blockquote>
+                  "If data collection were made visible through your own image, would you recognise yourself as a tracked entity?"
+                </blockquote>
+                <p>Every click you make is tracked and cataloged. BiType plays with this idea: what looks like random blocks or digital noise is actually a <strong>secret message</strong>. Once you know how to read the 4x4 grid, it's <strong>super easy to decode</strong>. It's <strong>hidden in plain sight</strong>!</p>
+              </div>
+            </details>
+
+            <details class="about-accordion">
+              <summary><span class="system-code">05 / THE NO-DOWNLOAD CLAIM</span><h3>THE GRID IS THE FONT</h3></summary>
+              <div class="accordion-content">
+                <p>The <strong>first font you don't need to download</strong>! You can write it in apps and websites where you can only use text or simple images like <strong>Instagram</strong>, and you can <strong>encrypt messages</strong>. (Also, you can copy and paste it directly from the <strong>Creator tab</strong>!)</p>
+              </div>
+            </details>
+
+            <details class="about-accordion">
+              <summary><span class="system-code">06 / MORE FUN USES FOR BITTYPE</span><h3>DAW MIDI TRANSLATION</h3></summary>
+              <div class="accordion-content">
+                <p>Did you know you can <strong>play BiType like an instrument</strong>? By mapping the 4x4 grids of letters to <strong>MIDI notes</strong>, you can feed text directly into hardware synths and <strong>DAWs</strong> (music production software).</p>
+                <p>Each <strong>solid cell (1)</strong> triggers a note, while <strong>empty cells (0)</strong> act as rests. Type a message, and it instantly plays back as a <strong>crazy chord progression or beat</strong>! Check out how we mapped the characters in our setup below:</p>
+                <div class="about-image-wrapper mt-1">
+                  <img src="assets/ableton_screenshot.jpg" alt="MIDI DAW Translation screenshot" style="width: 100%; border: 1px solid var(--color-border-base);" />
+                </div>
+              </div>
+            </details>
+
+            <details class="about-accordion">
+              <summary><span class="system-code">07 / POSTER INSTALLATION</span><h3>ENDCORE speculative campus project</h3></summary>
+              <div class="accordion-content">
+                <p>For the <strong>ENDCORE project</strong>, I pasted <strong>custom posters</strong> all over campus to get people talking about privacy. Inspired by old-school "If you're reading this, it's too late" letters, the posters are <strong>warnings hidden in plain sight</strong>. I even made a poster using an <strong>ASCII-art selfie</strong> to show how tech companies turn our private photos into raw data grids.</p>
+              </div>
+            </details>
+
+            <details class="about-accordion">
+              <summary><span class="system-code">08 / ABOUT THE CREATOR</span><h3>ABOUT ME</h3></summary>
+              <div class="accordion-content creator-bio-grid">
+                <div class="bio-photo-wrapper">
+                  <img src="assets/jan.a.wojtas.jpg" alt="Jan A. Wojtaś" class="bio-photo" />
+                </div>
+                <div class="bio-text">
+                  <p>I am <strong>Jan A. Wojta<a href="https://issuu.com/janaleksanderwojtas/docs/no_glyph_72b80e6da3b2b6" target="_blank" class="no-glyph-link"><img class="no-glyph-inline" src="assets/logo_s.png" alt="ś" /></a></strong>, an <strong>18 year old multidisciplinary artist</strong>. Born and raised in Barcelona with Polish nationality currently studying at <strong>LCI Barcelona</strong> in Spain. This is my first time building a web app, and I love to experiment with all kinds of creative mediums!</p>
+                  <p><strong>BiType</strong> is a fun project about <strong>hiding messages in plain sight</strong>. It combines my love for design, deep search, and community participation. I love experimenting, like using code to make art, ask questions, and think about how we share our lives online.</p>
+                  <p>Big thanks to my friend <strong>Theo</strong>, this project wouldn't have been possible without your <strong>Claude membership</strong>!</p>
+                  <p><strong>Check out my other work!</strong></p>
+                  <div class="contact-details mt-1">
+                    <p><strong>Instagram:</strong> <a href="https://instagram.com/janaleksanderwojtas" target="_blank" style="text-decoration: underline;">@janaleksanderwojtas</a></p>
+                    <p><strong>Email:</strong> <a href="mailto:janaleksanderwojtas@gmail.com" style="text-decoration: underline;">janaleksanderwojtas@gmail.com</a></p>
+                  </div>
+                </div>
+              </div>
+            </details>
+
+            <details class="about-accordion">
+              <summary><span class="system-code">09 / CREDIT</span><h3>A-TYPOGRAPHY</h3></summary>
+              <div class="accordion-content">
+                <p>Credit goes to the conceptual and formal <strong>inspirations</strong> from <a href="https://www.atypography.com/" target="_blank" style="text-decoration: underline; font-weight: bold;">A-Typography</a>. Explore their typographic experiments below:</p>
+                <div class="iframe-wrapper mt-1">
+                  <iframe src="https://www.atypography.com/" style="width: 100%; height: 400px; border: 1px solid var(--color-border-base);" title="A-Typography Website"></iframe>
+                </div>
+              </div>
+            </details>
+
+            <details class="about-accordion">
+              <summary><span class="system-code">10 / PROCESS</span><h3>PRODUCTION PROCESS</h3></summary>
+              <div class="accordion-content">
+                <p>The development of the BiType design system and web application followed a structured workflow translating conceptual sketches into a fully functional digital tool:</p>
+                <ol class="styled-list" style="margin-left: 0; padding-left: 0;">
+                  <li><strong>Sketchbook</strong>: Initial conceptualization and grid drafts.</li>
+                  <li><strong>Figma</strong>: Visual interface design and component layout.</li>
+                  <li><strong>Claude</strong>: Coding structural logic, SVG exporters, and web interface elements.</li>
+                  <li><strong>Antigravity AI</strong>: Refinement of the TTF custom compiler, visual overhauls, loading optimization, and GPU animation binding.</li>
+                  <li><strong>GitHub</strong>: Version control and repository management.</li>
+                  <li><strong>Vercel</strong>: Production deployment and global hosting.</li>
+                </ol>
+              </div>
+            </details>
 
           </div>
 
@@ -738,11 +1328,7 @@
                 </div>
                 <div class="metadata-row">
                   <span class="lbl">YEAR:</span>
-                  <span class="val">2025–26</span>
-                </div>
-                <div class="metadata-row">
-                  <span class="lbl">SYSTEM:</span>
-                  <span class="val">16-bit 4x4 Grid</span>
+                  <span class="val">2026</span>
                 </div>
               </div>
 
@@ -759,36 +1345,43 @@
   <!-- Footer Section -->
   <footer class="main-footer">
     <div class="footer-left">
-      <span>BITYPE // SPECULATIVE TYPOGRAPHY RESEARCH PROJECT</span>
+      <a href="https://issuu.com/janaleksanderwojtas/docs/no_glyph_72b80e6da3b2b6" target="_blank" class="footer-logo-link" style="display: inline-flex; align-items: center; gap: 0.75rem; text-decoration: none; color: inherit;">
+        <img class="no-glyph-inline" src="assets/logo_s.png" alt="ś" style="height: 1.85em; width: auto; vertical-align: middle; margin-top: -0.12em; margin-left: 0; margin-right: 0;" />
+        <span class="slow-flash-text" style="font-size: 13px; font-weight: 700; letter-spacing: 0.15em; color: var(--color-text-secondary);">CLICK ME!</span>
+      </a>
     </div>
     <div class="footer-right">
-      <span>2025–26 © CREATIVE COMMONS</span>
+      <span>2026 © CREATIVE COMMONS</span>
     </div>
   </footer>
 
   <!-- Pulsing Grid Processing Overlay -->
   <div id="processing-overlay" class="processing-overlay">
-    <div class="processing-container">
+    <div class="processing-container" style="position: relative; z-index: 2;">
       <div class="processing-grid">
-        <div class="processing-cell" style="animation-delay: 0.0s;"><span class="bit-1">1</span><span class="bit-0">0</span></div>
-        <div class="processing-cell" style="animation-delay: 0.1s;"><span class="bit-1">1</span><span class="bit-0">0</span></div>
-        <div class="processing-cell" style="animation-delay: 0.2s;"><span class="bit-1">1</span><span class="bit-0">0</span></div>
-        <div class="processing-cell" style="animation-delay: 0.3s;"><span class="bit-1">1</span><span class="bit-0">0</span></div>
+        <!-- Row 0 -->
+        <div class="processing-cell outer-cell" style="--step: 0;"><span class="bit-1">1</span><span class="bit-0">0</span></div>
+        <div class="processing-cell outer-cell" style="--step: 1;"><span class="bit-1">1</span><span class="bit-0">0</span></div>
+        <div class="processing-cell outer-cell" style="--step: 2;"><span class="bit-1">1</span><span class="bit-0">0</span></div>
+        <div class="processing-cell outer-cell" style="--step: 3;"><span class="bit-1">1</span><span class="bit-0">0</span></div>
         
-        <div class="processing-cell" style="animation-delay: 0.1s;"><span class="bit-1">1</span><span class="bit-0">0</span></div>
-        <div class="processing-cell" style="animation-delay: 0.2s;"><span class="bit-1">1</span><span class="bit-0">0</span></div>
-        <div class="processing-cell" style="animation-delay: 0.3s;"><span class="bit-1">1</span><span class="bit-0">0</span></div>
-        <div class="processing-cell" style="animation-delay: 0.4s;"><span class="bit-1">1</span><span class="bit-0">0</span></div>
+        <!-- Row 1 -->
+        <div class="processing-cell outer-cell" style="--step: 11;"><span class="bit-1">1</span><span class="bit-0">0</span></div>
+        <div class="processing-cell inner-cell"><span class="bit-1">1</span><span class="bit-0">0</span></div>
+        <div class="processing-cell inner-cell"><span class="bit-1">1</span><span class="bit-0">0</span></div>
+        <div class="processing-cell outer-cell" style="--step: 4;"><span class="bit-1">1</span><span class="bit-0">0</span></div>
         
-        <div class="processing-cell" style="animation-delay: 0.2s;"><span class="bit-1">1</span><span class="bit-0">0</span></div>
-        <div class="processing-cell" style="animation-delay: 0.3s;"><span class="bit-1">1</span><span class="bit-0">0</span></div>
-        <div class="processing-cell" style="animation-delay: 0.4s;"><span class="bit-1">1</span><span class="bit-0">0</span></div>
-        <div class="processing-cell" style="animation-delay: 0.5s;"><span class="bit-1">1</span><span class="bit-0">0</span></div>
+        <!-- Row 2 -->
+        <div class="processing-cell outer-cell" style="--step: 10;"><span class="bit-1">1</span><span class="bit-0">0</span></div>
+        <div class="processing-cell inner-cell"><span class="bit-1">1</span><span class="bit-0">0</span></div>
+        <div class="processing-cell inner-cell"><span class="bit-1">1</span><span class="bit-0">0</span></div>
+        <div class="processing-cell outer-cell" style="--step: 5;"><span class="bit-1">1</span><span class="bit-0">0</span></div>
         
-        <div class="processing-cell" style="animation-delay: 0.3s;"><span class="bit-1">1</span><span class="bit-0">0</span></div>
-        <div class="processing-cell" style="animation-delay: 0.4s;"><span class="bit-1">1</span><span class="bit-0">0</span></div>
-        <div class="processing-cell" style="animation-delay: 0.5s;"><span class="bit-1">1</span><span class="bit-0">0</span></div>
-        <div class="processing-cell" style="animation-delay: 0.6s;"><span class="bit-1">1</span><span class="bit-0">0</span></div>
+        <!-- Row 3 -->
+        <div class="processing-cell outer-cell" style="--step: 9;"><span class="bit-1">1</span><span class="bit-0">0</span></div>
+        <div class="processing-cell outer-cell" style="--step: 8;"><span class="bit-1">1</span><span class="bit-0">0</span></div>
+        <div class="processing-cell outer-cell" style="--step: 7;"><span class="bit-1">1</span><span class="bit-0">0</span></div>
+        <div class="processing-cell outer-cell" style="--step: 6;"><span class="bit-1">1</span><span class="bit-0">0</span></div>
       </div>
       <div id="processing-text" class="processing-text">PROCESSING...</div>
     </div>
@@ -808,9 +1401,63 @@
         <p class="modal-desc mt-1">
           <strong>IMPORTANT:</strong> This CPU-intensive process may cause the browser to temporarily stutter. If the browser displays an <strong>"Unresponsive Page"</strong> or <strong>"Page is not responding"</strong> warning, please click <strong>"WAIT"</strong> (do not close/exit). The download will trigger shortly after.
         </p>
+        <div class="modal-options mt-1" style="display: flex; align-items: center; gap: 0.5rem; margin-top: 1.5rem;">
+          <input type="checkbox" id="chk-skip-ttf-warning" style="width: auto; cursor: pointer;">
+          <label for="chk-skip-ttf-warning" style="font-size: 11px; color: var(--color-text-secondary); cursor: pointer; user-select: none;">Do not show this warning again</label>
+        </div>
         <div class="modal-actions mt-2" style="display: flex; gap: 1rem; margin-top: 1.5rem;">
           <button id="btn-modal-cancel" class="btn btn-secondary" style="flex: 1;">CANCEL</button>
           <button id="btn-modal-proceed" class="btn btn-primary" style="flex: 1;">PROCEED & DOWNLOAD</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SVG Vector Explanation Modal -->
+  <div id="svg-explanation-modal" class="modal-overlay">
+    <div class="modal-container" style="max-width: 600px;">
+      <div class="modal-header">
+        <span class="modal-title">SYSTEM_EXPLANATION // SVG_VECTOR_TRACING</span>
+        <span class="panel-dot"></span>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">
+          BiType converts raster pixels into vector shapes. Standard images (like PNG/JPG) are made of pixels, which become blurry when scaled.
+        </p>
+        <p class="modal-desc mt-1">
+          To create a downloadable TrueType Font (.ttf), we use the <strong>ImageTracer.js</strong> library to trace the contours of your uploaded images and compile them into mathematical SVG paths.
+        </p>
+        
+        <div class="vector-diagram-wrapper mt-1" style="border: 1px solid var(--color-border-base); padding: 1rem; background-color: var(--color-bg-inner); margin-top: 1.5rem;">
+          <svg viewBox="0 0 500 120" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: auto;">
+            <!-- Flowchart -->
+            <g transform="translate(10, 10)">
+              <!-- Input Image -->
+              <rect x="0" y="20" width="100" height="60" fill="#0d0d0d" stroke="#222222" />
+              <text x="50" y="50" fill="#ffffff" font-family="monospace" font-size="10" font-weight="bold" text-anchor="middle">RASTER IMAGE</text>
+              <text x="50" y="65" fill="#888888" font-family="monospace" font-size="8" text-anchor="middle">(PNG / JPG / BMP)</text>
+              
+              <!-- Arrow 1 -->
+              <path d="M 115 50 L 145 50" stroke="#888888" marker-end="url(#arrow)" stroke-width="1.5" />
+              
+              <!-- Binarization -->
+              <rect x="160" y="20" width="100" height="60" fill="#0d0d0d" stroke="#222222" />
+              <text x="210" y="50" fill="#ffffff" font-family="monospace" font-size="10" font-weight="bold" text-anchor="middle">BINARIZATION</text>
+              <text x="210" y="65" fill="#888888" font-family="monospace" font-size="8" text-anchor="middle">(Black &amp; White)</text>
+              
+              <!-- Arrow 2 -->
+              <path d="M 275 50 L 305 50" stroke="#888888" marker-end="url(#arrow)" stroke-width="1.5" />
+              
+              <!-- Vector Paths -->
+              <rect x="320" y="20" width="100" height="60" fill="#0d0d0d" stroke="#ffffff" stroke-width="1.5" />
+              <text x="370" y="50" fill="#ffffff" font-family="monospace" font-size="10" font-weight="bold" text-anchor="middle">VECTOR PATHS</text>
+              <text x="370" y="65" fill="#888888" font-family="monospace" font-size="8" text-anchor="middle">(SVG Bezier Curves)</text>
+            </g>
+          </svg>
+        </div>
+        
+        <div class="modal-actions mt-2" style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+          <button id="btn-svg-explanation-close" class="btn btn-primary w-100">CLOSE</button>
         </div>
       </div>
     </div>

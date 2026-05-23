@@ -37,7 +37,7 @@ else:
 # Verify event listeners for buttons
 buttons_checked = [
     'btn-export-png', 'btn-export-svg', 'btn-export-ttf',
-    'btn-export-sheet-png', 'btn-export-sheet-svg', 'btn-use-installed-font'
+    'btn-export-sheet-png', 'btn-export-sheet-svg'
 ]
 
 print("\nVerifying specific elements and buttons existence:")
