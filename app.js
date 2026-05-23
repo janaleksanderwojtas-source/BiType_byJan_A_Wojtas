@@ -106,13 +106,16 @@ const PRESETS = {
   "matrix": {
     name: "BiType Matrix",
     bg: "#000000",
-    color1: "#ffffff",
-    color0: "#ffffff",
+    color1: "#00ff00",
+    color0: "#00ff00",
     borders: false,
     borderColor: "#222222",
     borderWidth: 1,
     stemRatio: 0.25,
-    mode: "default",
+    mode: "glyphs",
+    fontFamily: "'Space Mono', monospace",
+    glyph1: "1",
+    glyph0: "0",
     cellBg: false,
     cellBgColor: "#121212"
   }
@@ -160,7 +163,22 @@ const STATE = {
   customPresets: {},
   
   // Active Preset ID (if any)
-  activePresetId: ""
+  activePresetId: "",
+  
+  // Guided Builder State
+  builderMode: "advanced", // "guided" or "advanced"
+  guidedStep: 1,
+  guidedSource: "", // "font", "image", "draw"
+  guidedGlyph1File: null,
+  guidedGlyph0File: null,
+  guidedGlyph1Threshold: 50,
+  guidedGlyph0Threshold: 50,
+  guidedGlyph1Stem: 0.25,
+  guidedGlyph0Stem: 0.25,
+  guidedGlyph1FontFamily: "'Space Mono', monospace",
+  guidedGlyph0FontFamily: "'Space Mono', monospace",
+  guidedGlyph1Char: "1",
+  guidedGlyph0Char: "0"
 };
 
 // Offscreen canvases for image caching with color overlays
@@ -182,8 +200,10 @@ const DOM = {
   fontUpload: document.getElementById('font-upload'),
   fontUploadName: document.getElementById('font-upload-name'),
   charCounter: document.getElementById('char-counter'),
+  btnCopyText: document.getElementById('btn-copy-text'),
   btnClearText: document.getElementById('btn-clear-text'),
   btnToggleFit: document.getElementById('btn-toggle-fit'),
+  toggleVectorPreview: document.getElementById('toggle-vector-preview'),
   
   // Settings - Geometry
   inputCellSize: document.getElementById('input-cell-size'),
@@ -256,8 +276,6 @@ const DOM = {
   btnExportSheetSvg: document.getElementById('btn-export-sheet-svg'),
   inputZoom: document.getElementById('input-zoom'),
   valZoom: document.getElementById('val-zoom'),
-  inputInstalledFont: document.getElementById('input-installed-font'),
-  btnUseInstalledFont: document.getElementById('btn-use-installed-font'),
   inputFontName: document.getElementById('input-font-name'),
   
   // Page 2: The Font Specimen
@@ -281,47 +299,95 @@ const DOM = {
   aboutBtnClear: document.getElementById('about-btn-clear'),
   logoCanvas: document.getElementById('logo-canvas'),
   processingOverlay: document.getElementById('processing-overlay'),
-  processingText: document.getElementById('processing-text')
+  processingText: document.getElementById('processing-text'),
+  ttfWarningModal: document.getElementById('ttf-warning-modal'),
+  btnModalCancel: document.getElementById('btn-modal-cancel'),
+  btnModalProceed: document.getElementById('btn-modal-proceed'),
+  chkSkipTtfWarning: document.getElementById('chk-skip-ttf-warning'),
+  svgExplanationModal: document.getElementById('svg-explanation-modal'),
+  linkSvgExplanation: document.getElementById('link-svg-explanation'),
+  btnSvgExplanationClose: document.getElementById('btn-svg-explanation-close')
 };
 
 // -------------------------------------------------------------
 // NAVIGATION & PAGE ROUTING (SPA)
 // -------------------------------------------------------------
+function navigateTo(target) {
+  // Update header visibility
+  const header = document.getElementById('main-header');
+  if (target === 'startup') {
+    if (header) header.style.display = 'none';
+  } else {
+    if (header) header.style.display = 'flex';
+  }
+
+  // Update builderMode based on target
+  if (target === 'creator') {
+    STATE.builderMode = 'advanced';
+  } else if (target === 'guided') {
+    STATE.builderMode = 'guided';
+  }
+
+  // Update nav link targets dynamically
+  const modeSwitch = document.getElementById('nav-mode-switch');
+  const creatorLink = document.getElementById('nav-creator-link');
+  if (modeSwitch) {
+    if (STATE.builderMode === 'guided') {
+      modeSwitch.textContent = 'EXIT BUILDER';
+    } else {
+      modeSwitch.textContent = 'CHANGE MODE';
+    }
+  }
+  if (creatorLink) {
+    if (STATE.builderMode === 'guided') {
+      creatorLink.setAttribute('data-target', 'guided');
+      creatorLink.setAttribute('href', '#guided');
+    } else {
+      creatorLink.setAttribute('data-target', 'creator');
+      creatorLink.setAttribute('href', '#creator');
+    }
+  }
+
+  // Update nav links styling
+  DOM.navLinks.forEach(nl => {
+    nl.classList.remove('active');
+    if (nl.getAttribute('data-target') === target) {
+      nl.classList.add('active');
+    }
+  });
+
+  // Show/hide sections
+  DOM.pageSections.forEach(section => {
+    section.classList.remove('active');
+    if (section.id === `page-${target}`) {
+      section.classList.add('active');
+    }
+  });
+
+  // If creator page is active, trigger resize & draw to ensure correct proportions
+  if (target === 'creator') {
+    setTimeout(drawCreatorText, 50);
+  }
+
+  // Update hash in URL
+  window.location.hash = target;
+}
+
 function initRouting() {
   DOM.navLinks.forEach(link => {
     link.addEventListener('click', (e) => {
       e.preventDefault();
       const target = link.getAttribute('data-target');
-      
-      // Update nav links styling
-      DOM.navLinks.forEach(nl => nl.classList.remove('active'));
-      link.classList.add('active');
-      
-      // Show/hide sections
-      DOM.pageSections.forEach(section => {
-        section.classList.remove('active');
-        if (section.id === `page-${target}`) {
-          section.classList.add('active');
-        }
-      });
-      
-      // If creator page is active, trigger resize & draw to ensure correct proportions
-      if (target === 'creator') {
-        setTimeout(drawCreatorText, 50);
-      }
-      
-      // Update hash in URL
-      window.location.hash = target;
+      navigateTo(target);
     });
   });
   
   // Deep link support on load
   const hash = window.location.hash.replace('#', '');
   if (hash) {
-    const activeLink = document.querySelector(`.nav-link[data-target="${hash}"]`);
-    if (activeLink) {
-      activeLink.click();
-    }
+    navigateTo(hash);
+  } else {
+    navigateTo('startup'); // Startup is default
   }
 }
 
@@ -399,7 +465,7 @@ function drawRepresentation(ctx, x, y, size, isActive, settings) {
     // Standard Bars + Circles system
     if (isActive) {
       // Glyph-1 (Bar)
-      const stemW = size * settings.stemRatio;
+      const stemW = size * (settings.stemRatio1 !== undefined ? settings.stemRatio1 : settings.stemRatio);
       ctx.fillStyle = settings.color1;
       ctx.fillRect(x + (size - stemW) / 2, y, stemW, size);
     } else {
@@ -407,7 +473,8 @@ function drawRepresentation(ctx, x, y, size, isActive, settings) {
       const cx = x + size / 2;
       const cy = y + size / 2;
       const R = size / 2;
-      const r = Math.max(0, R * (1 - settings.stemRatio * 1.5)); // Shrink inner radius as weight increases
+      const stemVal = settings.stemRatio0 !== undefined ? settings.stemRatio0 : settings.stemRatio;
+      const r = Math.max(0, R * (1 - stemVal * 1.5)); // Shrink inner radius as weight increases
       
       ctx.fillStyle = settings.color0;
       ctx.beginPath();
@@ -421,9 +488,10 @@ function drawRepresentation(ctx, x, y, size, isActive, settings) {
     // Text Character mode
     const char = isActive ? settings.glyph1 : settings.glyph0;
     const color = isActive ? settings.color1 : settings.color0;
+    const family = isActive ? (settings.fontFamily1 || settings.fontFamily) : (settings.fontFamily0 || settings.fontFamily);
     
     ctx.fillStyle = color;
-    ctx.font = `bold ${size}px ${settings.fontFamily}`;
+    ctx.font = `bold ${size}px ${family}`;
     ctx.textBaseline = "middle";
     ctx.textAlign = "center";
     ctx.fillText(char, x + size / 2, y + size / 2);
@@ -723,8 +791,34 @@ function reversePath(path) {
   return reversed;
 }
 
+// Helper to precompile and reverse parsed SVG paths at normalized coordinates (0,0) and scale 1
+function precompileNormalizedCommands(svgPaths, imgW, imgH) {
+  const normCommands = [];
+  svgPaths.forEach(d => {
+    const tempPath = new opentype.Path();
+    parseSVGPathToOpentype(d, tempPath, 0, 0, 1, imgW, imgH);
+    const reversedTemp = reversePath(tempPath);
+    normCommands.push(...reversedTemp.commands);
+  });
+  return normCommands;
+}
+
+// Helper to scale and translate precompiled commands to specific grid cell positions
+function scaleAndTranslateCommands(commands, drawX, drawY, size) {
+  return commands.map(cmd => {
+    const newCmd = { ...cmd };
+    if (newCmd.x !== undefined) newCmd.x = drawX + newCmd.x * size;
+    if (newCmd.y !== undefined) newCmd.y = drawY + newCmd.y * size;
+    if (newCmd.x1 !== undefined) newCmd.x1 = drawX + newCmd.x1 * size;
+    if (newCmd.y1 !== undefined) newCmd.y1 = drawY + newCmd.y1 * size;
+    if (newCmd.x2 !== undefined) newCmd.x2 = drawX + newCmd.x2 * size;
+    if (newCmd.y2 !== undefined) newCmd.y2 = drawY + newCmd.y2 * size;
+    return newCmd;
+  });
+}
+
 // Trace image using ImageTracer.js and add mapped vectors to opentype path
-function traceImageElementToPaths(img, path, drawX, drawY, size) {
+function traceImageElementToPaths(img, path, drawX, drawY, size, threshold = 50) {
   if (!img) return;
   
   // 1. Draw image to temporary canvas at 128x128 resolution for balanced trace performance/quality
@@ -753,12 +847,14 @@ function traceImageElementToPaths(img, path, drawX, drawY, size) {
     }
   }
   
+  const threshVal = threshold * 2.55;
+  
   // Binarize pixels (transparent/light to white, dark to black) to make tracing robust
   if (hasAlpha) {
     for (let i = 0; i < data.length; i += 4) {
       const a = data[i+3];
       // Keep solid black if visible enough, otherwise transparent becomes white
-      if (a >= 50) {
+      if (a >= threshVal) {
         data[i] = 0;       // R
         data[i+1] = 0;     // G
         data[i+2] = 0;     // B
@@ -777,7 +873,7 @@ function traceImageElementToPaths(img, path, drawX, drawY, size) {
       const b = data[i+2];
       // Calculate relative luminance / brightness
       const brightness = 0.299 * r + 0.587 * g + 0.114 * b;
-      if (brightness > 128) {
+      if (brightness > threshVal) {
         data[i] = 255;     // R
         data[i+1] = 255;   // G
         data[i+2] = 255;   // B
@@ -975,27 +1071,49 @@ function generateSVGData(text, settings) {
         
         if (settings.representationMode === 'default') {
           if (bit === 1) {
-            const stemW = size * settings.stemRatio;
+            const stemW = size * (settings.stemRatio1 !== undefined ? settings.stemRatio1 : settings.stemRatio);
             const barX = drawX + (size - stemW) / 2;
             svg += `  <rect x="${barX}" y="${drawY}" width="${stemW}" height="${size}" fill="${settings.color1}" />\n`;
           } else {
             const cx = drawX + size / 2;
             const cy = drawY + size / 2;
             const R = size / 2;
-            const r = Math.max(0, R * (1 - settings.stemRatio * 1.5));
+            const stemVal = settings.stemRatio0 !== undefined ? settings.stemRatio0 : settings.stemRatio;
+            const r = Math.max(0, R * (1 - stemVal * 1.5));
             svg += `  <path d="M ${cx} ${cy - R} A ${R} ${R} 0 1 0 ${cx} ${cy + R} A ${R} ${R} 0 1 0 ${cx} ${cy - R} Z M ${cx} ${cy - r} A ${r} ${r} 0 1 1 ${cx} ${cy + r} A ${r} ${r} 0 1 1 ${cx} ${cy - r} Z" fill="${settings.color0}" fill-rule="evenodd" />\n`;
           }
         } 
         else if (settings.representationMode === 'glyphs') {
           const charSymbol = bit === 1 ? settings.glyph1 : settings.glyph0;
           const color = bit === 1 ? settings.color1 : settings.color0;
-          const tx = drawX + size / 2;
-          const ty = drawY + size / 2 + (size * 0.1);
-          svg += `  <text x="${tx}" y="${ty}" fill="${color}" font-family="${settings.fontFamily.replace(/'/g, "")}" font-size="${size}px" font-weight="bold" text-anchor="middle" dominant-baseline="middle">${charSymbol}</text>\n`;
+          const family = bit === 1 ? (settings.fontFamily1 || settings.fontFamily) : (settings.fontFamily0 || settings.fontFamily);
+          
+          if (settings.vectorPreview) {
+            const paths = getTraceSvgPathsForGlyph(charSymbol, family);
+            svg += `  <g transform="translate(${drawX}, ${drawY}) scale(${size / 128})">\n`;
+            paths.forEach(d => {
+              svg += `    <path d="${d}" fill="${color}" />\n`;
+            });
+            svg += `  </g>\n`;
+          } else {
+            const tx = drawX + size / 2;
+            const ty = drawY + size / 2 + (size * 0.1);
+            svg += `  <text x="${tx}" y="${ty}" fill="${color}" font-family="${family.replace(/'/g, "")}" font-size="${size}px" font-weight="bold" text-anchor="middle" dominant-baseline="middle">${charSymbol}</text>\n`;
+          }
         } 
         else if (settings.representationMode === 'images') {
           const bitImg = bit === 1 ? settings.img1 : settings.img0;
-          if (bitImg) {
+          const threshold = bit === 1 ? (settings.threshold1 !== undefined ? settings.threshold1 : 50) : (settings.threshold0 !== undefined ? settings.threshold0 : 50);
+          const color = bit === 1 ? settings.color1 : settings.color0;
+          
+          if (settings.vectorPreview && bitImg) {
+            const paths = getTraceSvgPathsForImage(bitImg, threshold);
+            svg += `  <g transform="translate(${drawX}, ${drawY}) scale(${size / 128})">\n`;
+            paths.forEach(d => {
+              svg += `    <path d="${d}" fill="${color}" />\n`;
+            });
+            svg += `  </g>\n`;
+          } else if (bitImg) {
             const offscreen = bit === 1 ? offscreenImgCanvas1 : offscreenImgCanvas0;
             const dataUrl = offscreen.toDataURL("image/png");
             svg += `  <image x="${drawX}" y="${drawY}" width="${size}" height="${size}" href="${dataUrl}" />\n`;
@@ -1288,6 +1406,31 @@ function updateUIFromState() {
 }
 
 function initControlListeners() {
+  // Bind vector outlines toggle switch
+  if (DOM.toggleVectorPreview) {
+    DOM.toggleVectorPreview.addEventListener('change', () => {
+      STATE.settings.vectorPreview = DOM.toggleVectorPreview.checked;
+      
+      const knob = DOM.toggleVectorPreview.parentElement.querySelector('.custom-switch-knob');
+      const track = DOM.toggleVectorPreview.parentElement.querySelector('.custom-switch');
+      if (knob && track) {
+        if (DOM.toggleVectorPreview.checked) {
+          knob.style.transform = 'translateX(12px)';
+          knob.style.background = '#00ff66';
+          track.style.background = '#0c331a';
+          track.style.borderColor = '#00ff66';
+        } else {
+          knob.style.transform = 'translateX(0)';
+          knob.style.background = '#888';
+          track.style.background = '#222';
+          track.style.borderColor = '#444';
+        }
+      }
+      
+      drawCreatorText();
+    });
+  }
+
   // Helpers to bind input sliders
   const bindSlider = (input, valSpan, stateKey) => {
     input.addEventListener('input', () => {
@@ -1372,6 +1515,23 @@ function initControlListeners() {
     drawCreatorText();
   });
   
+  if (DOM.btnCopyText) {
+    DOM.btnCopyText.addEventListener('click', () => {
+      const textToCopy = wrapText(DOM.sampleText.value.toUpperCase(), 20);
+      navigator.clipboard.writeText(textToCopy).then(() => {
+        const originalHtml = DOM.btnCopyText.innerHTML;
+        DOM.btnCopyText.innerHTML = '<i class="ti ti-check"></i>';
+        DOM.btnCopyText.setAttribute('title', 'Copied!');
+        setTimeout(() => {
+          DOM.btnCopyText.innerHTML = originalHtml;
+          DOM.btnCopyText.setAttribute('title', 'Copy Text');
+        }, 1500);
+      }).catch(err => {
+        console.error("Could not copy text: ", err);
+      });
+    });
+  }
+  
   DOM.btnToggleFit.addEventListener('click', () => {
     DOM.canvasContainer.classList.toggle('fit-mode');
     DOM.btnToggleFit.classList.toggle('active');
@@ -1395,11 +1555,20 @@ function initControlListeners() {
       STATE.activePresetId = "";
       
       if (STATE.settings.representationMode === 'images') {
-        reCacheImages();
+        showProcessing("LOADING IMAGE REPRESENTATION...");
+        setTimeout(() => {
+          try {
+            reCacheImages();
+            updateUIFromState();
+            drawCreatorText();
+          } finally {
+            hideProcessing();
+          }
+        }, 100);
+      } else {
+        updateUIFromState();
+        drawCreatorText();
       }
-      
-      updateUIFromState();
-      drawCreatorText();
     });
   });
   
@@ -1468,6 +1637,7 @@ function initControlListeners() {
   DOM.fileGlyph1.addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (file) {
+      showProcessing("PROCESSING UPLOADED IMAGE...");
       STATE.settings.img1Name = file.name;
       DOM.infoGlyph1.textContent = file.name;
       
@@ -1475,9 +1645,15 @@ function initControlListeners() {
       reader.onload = (event) => {
         const img = new Image();
         img.onload = () => {
-          STATE.settings.img1 = img;
-          cacheUploadedImage(img, true);
-          drawCreatorText();
+          setTimeout(() => {
+            try {
+              STATE.settings.img1 = img;
+              cacheUploadedImage(img, true);
+              drawCreatorText();
+            } finally {
+              hideProcessing();
+            }
+          }, 100);
         };
         img.src = event.target.result;
       };
@@ -1488,6 +1664,7 @@ function initControlListeners() {
   DOM.fileGlyph0.addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (file) {
+      showProcessing("PROCESSING UPLOADED IMAGE...");
       STATE.settings.img0Name = file.name;
       DOM.infoGlyph0.textContent = file.name;
       
@@ -1495,9 +1672,15 @@ function initControlListeners() {
       reader.onload = (event) => {
         const img = new Image();
         img.onload = () => {
-          STATE.settings.img0 = img;
-          cacheUploadedImage(img, false);
-          drawCreatorText();
+          setTimeout(() => {
+            try {
+              STATE.settings.img0 = img;
+              cacheUploadedImage(img, false);
+              drawCreatorText();
+            } finally {
+              hideProcessing();
+            }
+          }, 100);
         };
         img.src = event.target.result;
       };
@@ -1538,6 +1721,10 @@ function applyPreset(presetData, id) {
   s.borderWidth = presetData.borderWidth || 1;
   s.stemRatio = presetData.stemRatio || 0.25;
   s.representationMode = presetData.mode || "default";
+  
+  s.fontFamily = presetData.fontFamily !== undefined ? presetData.fontFamily : s.fontFamily;
+  s.glyph1 = presetData.glyph1 !== undefined ? presetData.glyph1 : s.glyph1;
+  s.glyph0 = presetData.glyph0 !== undefined ? presetData.glyph0 : s.glyph0;
   
   STATE.activePresetId = id;
   
@@ -1697,6 +1884,47 @@ function generateSVGString() {
   return result.svg;
 }
 
+// Triggers the TTF warning flow and download
+function triggerTtfExportFlow() {
+  const isImageMode = STATE.settings.representationMode === 'images';
+  const isGuided = STATE.builderMode === 'guided';
+  let skipWarning = false;
+  if (isGuided) {
+    skipWarning = isImageMode 
+      ? localStorage.getItem('bitype_skip_ttf_warning_guided_images') === 'true'
+      : localStorage.getItem('bitype_skip_ttf_warning_guided_v2') === 'true';
+  } else {
+    skipWarning = isImageMode 
+      ? localStorage.getItem('bitype_skip_ttf_warning_images') === 'true'
+      : localStorage.getItem('bitype_skip_ttf_warning_v2') === 'true';
+  }
+
+  if (skipWarning) {
+    showProcessing("GENERATING CUSTOM TTF FONT...");
+    setTimeout(() => {
+      try {
+        compileTTF();
+      } finally {
+        hideProcessing();
+      }
+    }, 100);
+  } else {
+    if (DOM.ttfWarningModal) {
+      if (DOM.chkSkipTtfWarning) DOM.chkSkipTtfWarning.checked = false;
+      DOM.ttfWarningModal.style.display = 'flex';
+    } else {
+      showProcessing("GENERATING CUSTOM TTF FONT...");
+      setTimeout(() => {
+        try {
+          compileTTF();
+        } finally {
+          hideProcessing();
+        }
+      }, 100);
+    }
+  }
+}
+
 function initExportListeners() {
   // High-Resolution PNG Download
   DOM.btnExportPng.addEventListener('click', () => {
@@ -1727,15 +1955,86 @@ function initExportListeners() {
   
   // TTF Download
   DOM.btnExportTtf.addEventListener('click', () => {
-    showProcessing("GENERATING CUSTOM TTF FONT...");
-    setTimeout(() => {
-      try {
-        compileTTF();
-      } finally {
-        hideProcessing();
-      }
-    }, 100);
+    triggerTtfExportFlow();
   });
+
+  // TTF Warning Modal - Cancel
+  if (DOM.btnModalCancel) {
+    DOM.btnModalCancel.addEventListener('click', () => {
+      if (DOM.ttfWarningModal) {
+        DOM.ttfWarningModal.style.display = 'none';
+      }
+    });
+  }
+
+  // TTF Warning Modal - Proceed
+  if (DOM.btnModalProceed) {
+    DOM.btnModalProceed.addEventListener('click', () => {
+      if (DOM.ttfWarningModal) {
+        DOM.ttfWarningModal.style.display = 'none';
+      }
+      const isImageMode = STATE.settings.representationMode === 'images';
+      const isGuided = STATE.builderMode === 'guided';
+      if (DOM.chkSkipTtfWarning && DOM.chkSkipTtfWarning.checked) {
+        if (isGuided) {
+          if (isImageMode) {
+            localStorage.setItem('bitype_skip_ttf_warning_guided_images', 'true');
+          } else {
+            localStorage.setItem('bitype_skip_ttf_warning_guided_v2', 'true');
+          }
+        } else {
+          if (isImageMode) {
+            localStorage.setItem('bitype_skip_ttf_warning_images', 'true');
+          } else {
+            localStorage.setItem('bitype_skip_ttf_warning_v2', 'true');
+          }
+        }
+      }
+      showProcessing("GENERATING CUSTOM TTF FONT...");
+      setTimeout(() => {
+        try {
+          compileTTF();
+        } finally {
+          hideProcessing();
+        }
+      }, 100);
+    });
+  }
+
+  // Close modal on overlay click
+  if (DOM.ttfWarningModal) {
+    DOM.ttfWarningModal.addEventListener('click', (e) => {
+      if (e.target === DOM.ttfWarningModal) {
+        DOM.ttfWarningModal.style.display = 'none';
+      }
+    });
+  }
+
+  // SVG Vector Explanation Modal handlers
+  if (DOM.linkSvgExplanation) {
+    DOM.linkSvgExplanation.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (DOM.svgExplanationModal) {
+        DOM.svgExplanationModal.style.display = 'flex';
+      }
+    });
+  }
+
+  if (DOM.btnSvgExplanationClose) {
+    DOM.btnSvgExplanationClose.addEventListener('click', () => {
+      if (DOM.svgExplanationModal) {
+        DOM.svgExplanationModal.style.display = 'none';
+      }
+    });
+  }
+
+  if (DOM.svgExplanationModal) {
+    DOM.svgExplanationModal.addEventListener('click', (e) => {
+      if (e.target === DOM.svgExplanationModal) {
+        DOM.svgExplanationModal.style.display = 'none';
+      }
+    });
+  }
   
   // Full specimen sheets exports
   DOM.btnExportSheetPng.addEventListener('click', () => {
@@ -1799,8 +2098,167 @@ function drawCirclePath(path, cx, cy, r, clockwise) {
   }
 }
 
+// Traces an image once and returns SVG path data strings
+function getTraceSvgPathsForImage(img, threshold = 50) {
+  if (!img) return [];
+  const tempCanvas = document.createElement('canvas');
+  const ctx = tempCanvas.getContext('2d');
+  const w = 128;
+  const h = 128;
+  tempCanvas.width = w;
+  tempCanvas.height = h;
+  ctx.clearRect(0, 0, w, h);
+  ctx.drawImage(img, 0, 0, w, h);
+
+  const imgData = ctx.getImageData(0, 0, w, h);
+  const data = imgData.data;
+
+  let hasAlpha = false;
+  for (let i = 3; i < data.length; i += 4) {
+    if (data[i] < 250) {
+      hasAlpha = true;
+      break;
+    }
+  }
+
+  const threshVal = threshold * 2.55;
+
+  if (hasAlpha) {
+    for (let i = 0; i < data.length; i += 4) {
+      const a = data[i+3];
+      if (a >= threshVal) {
+        data[i] = 0;
+        data[i+1] = 0;
+        data[i+2] = 0;
+        data[i+3] = 255;
+      } else {
+        data[i] = 255;
+        data[i+1] = 255;
+        data[i+2] = 255;
+        data[i+3] = 255;
+      }
+    }
+  } else {
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i];
+      const g = data[i+1];
+      const b = data[i+2];
+      const brightness = 0.299 * r + 0.587 * g + 0.114 * b;
+      if (brightness > threshVal) {
+        data[i] = 255;
+        data[i+1] = 255;
+        data[i+2] = 255;
+        data[i+3] = 255;
+      } else {
+        data[i] = 0;
+        data[i+1] = 0;
+        data[i+2] = 0;
+        data[i+3] = 255;
+      }
+    }
+  }
+  ctx.putImageData(imgData, 0, 0);
+
+  const options = {
+    ltres: 1,
+    qtres: 1,
+    pathomit: 0,
+    colorsampling: 0,
+    numberofcolors: 2,
+    mincolorratio: 0.02,
+    roundcoords: 1
+  };
+  const svgStr = ImageTracer.imagedataToSVG(imgData, options);
+
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(svgStr, 'image/svg+xml');
+  const paths = doc.querySelectorAll('path');
+  const results = [];
+
+  paths.forEach(p => {
+    const d = p.getAttribute('d');
+    if (d) {
+      const dLower = d.toLowerCase();
+      const hasTopLeft = dLower.includes('0 0') || dLower.includes('0,0');
+      const hasBottomRight = dLower.includes('128 128') || dLower.includes('128,128');
+      if (hasTopLeft && hasBottomRight) {
+        return;
+      }
+      results.push(d);
+    }
+  });
+  return results;
+}
+
+// Traces a glyph character once and returns SVG path data strings
+function getTraceSvgPathsForGlyph(char, fontFamily) {
+  if (!char) return [];
+  const tempCanvas = document.createElement('canvas');
+  const ctx = tempCanvas.getContext('2d');
+  const w = 128;
+  const h = 128;
+  tempCanvas.width = w;
+  tempCanvas.height = h;
+  ctx.clearRect(0, 0, w, h);
+
+  ctx.fillStyle = '#000000';
+  ctx.font = `bold 128px ${fontFamily}`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(char, w / 2, h / 2);
+
+  const imgData = ctx.getImageData(0, 0, w, h);
+  const data = imgData.data;
+
+  for (let i = 0; i < data.length; i += 4) {
+    const a = data[i+3];
+    if (a >= 50) {
+      data[i] = 0;
+      data[i+1] = 0;
+      data[i+2] = 0;
+      data[i+3] = 255;
+    } else {
+      data[i] = 255;
+      data[i+1] = 255;
+      data[i+2] = 255;
+      data[i+3] = 255;
+    }
+  }
+  ctx.putImageData(imgData, 0, 0);
+
+  const options = {
+    ltres: 1,
+    qtres: 1,
+    pathomit: 0,
+    colorsampling: 0,
+    numberofcolors: 2,
+    mincolorratio: 0.02,
+    roundcoords: 1
+  };
+  const svgStr = ImageTracer.imagedataToSVG(imgData, options);
+
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(svgStr, 'image/svg+xml');
+  const paths = doc.querySelectorAll('path');
+  const results = [];
+
+  paths.forEach(p => {
+    const d = p.getAttribute('d');
+    if (d) {
+      const dLower = d.toLowerCase();
+      const hasTopLeft = dLower.includes('0 0') || dLower.includes('0,0');
+      const hasBottomRight = dLower.includes('128 128') || dLower.includes('128,128');
+      if (hasTopLeft && hasBottomRight) {
+        return;
+      }
+      results.push(d);
+    }
+  });
+  return results;
+}
+
 // Helper to build glyph path for TTF compilation
-function buildTTFPath(binary, settings) {
+function buildTTFPath(binary, settings, precompiledCommands1, precompiledCommands0) {
   const path = new opentype.Path();
   const b = 200 * (settings.borderWidth / settings.cellSize);
   const pad = 200 * (settings.cellPadding / settings.cellSize);
@@ -1838,9 +2296,10 @@ function buildTTFPath(binary, settings) {
       const bit = binary[i];
       
       if (settings.representationMode === 'images') {
-        const img = bit === 1 ? settings.img1 : settings.img0;
-        if (img) {
-          traceImageElementToPaths(img, path, drawX, drawY, size);
+        const precompiled = bit === 1 ? precompiledCommands1 : precompiledCommands0;
+        if (precompiled && precompiled.length > 0) {
+          const scaledCmds = scaleAndTranslateCommands(precompiled, drawX, drawY, size);
+          path.commands.push(...scaledCmds);
         } else {
           // Fallback to solid square or circle if no image uploaded
           if (bit === 1) {
@@ -1854,12 +2313,15 @@ function buildTTFPath(binary, settings) {
           }
         }
       } else if (settings.representationMode === 'glyphs') {
-        const char = bit === 1 ? settings.glyph1 : settings.glyph0;
-        traceGlyphCharacterToPaths(char, settings.fontFamily, path, drawX, drawY, size);
+        const precompiled = bit === 1 ? precompiledCommands1 : precompiledCommands0;
+        if (precompiled && precompiled.length > 0) {
+          const scaledCmds = scaleAndTranslateCommands(precompiled, drawX, drawY, size);
+          path.commands.push(...scaledCmds);
+        }
       } else {
         if (bit === 1) {
           // Draw vertical bar (clockwise)
-          const stemW = size * settings.stemRatio;
+          const stemW = size * (settings.stemRatio1 !== undefined ? settings.stemRatio1 : settings.stemRatio);
           const barLeft = drawX + (size - stemW) / 2;
           const barRight = barLeft + stemW;
           
@@ -1873,7 +2335,8 @@ function buildTTFPath(binary, settings) {
           const cx = drawX + size / 2;
           const cy = drawY + size / 2;
           const R = size / 2;
-          const r = Math.max(0, R * (1 - settings.stemRatio * 1.5));
+          const stemVal = settings.stemRatio0 !== undefined ? settings.stemRatio0 : settings.stemRatio;
+          const r = Math.max(0, R * (1 - stemVal * 1.5));
           
           // Draw outer circle (clockwise)
           drawCirclePath(path, cx, cy, R, true);
@@ -1898,12 +2361,34 @@ function compileTTF() {
   const sanitizedFontName = rawFontName.replace(/[^a-zA-Z0-9\s\-_]/g, '') || "BiType Custom";
   const filename = sanitizedFontName.replace(/\s+/g, '_');
   
+  // Pre-trace active/inactive cells once to avoid redundant CPU operations
+  let precompiledCommands1 = [];
+  let precompiledCommands0 = [];
+  
+  if (settings.representationMode === 'images') {
+    if (settings.img1) {
+      const paths1 = getTraceSvgPathsForImage(settings.img1, settings.threshold1 !== undefined ? settings.threshold1 : 50);
+      precompiledCommands1 = precompileNormalizedCommands(paths1, 128, 128);
+    }
+    if (settings.img0) {
+      const paths0 = getTraceSvgPathsForImage(settings.img0, settings.threshold0 !== undefined ? settings.threshold0 : 50);
+      precompiledCommands0 = precompileNormalizedCommands(paths0, 128, 128);
+    }
+  } else if (settings.representationMode === 'glyphs') {
+    const fontFamily1 = settings.fontFamily1 || settings.fontFamily;
+    const fontFamily0 = settings.fontFamily0 || settings.fontFamily;
+    const paths1 = getTraceSvgPathsForGlyph(settings.glyph1, fontFamily1);
+    precompiledCommands1 = precompileNormalizedCommands(paths1, 128, 128);
+    const paths0 = getTraceSvgPathsForGlyph(settings.glyph0, fontFamily0);
+    precompiledCommands0 = precompileNormalizedCommands(paths0, 128, 128);
+  }
+  
   const glyphs = [];
   const processedUnicodes = new Set();
   
   // 1. Create the mandatory Notdef glyph (glyph index 0) - defined as all ones
   const notdefBinary = new Array(16).fill(1);
-  const notdefPath = buildTTFPath(notdefBinary, settings);
+  const notdefPath = buildTTFPath(notdefBinary, settings, precompiledCommands1, precompiledCommands0);
   const notdefGlyph = new opentype.Glyph({
     name: '.notdef',
     advanceWidth: 1000,
@@ -1916,7 +2401,7 @@ function compileTTF() {
     if (processedUnicodes.has(unicode)) return;
     processedUnicodes.add(unicode);
     
-    const path = buildTTFPath(binary, settings);
+    const path = buildTTFPath(binary, settings, precompiledCommands1, precompiledCommands0);
     const glyph = new opentype.Glyph({
       name: name,
       unicode: unicode,
@@ -2102,23 +2587,25 @@ function exportFullSheetSVG() {
       
       if (settings.representationMode === 'default') {
         if (bit === 1) {
-          const stemW = size * settings.stemRatio;
+          const stemW = size * (settings.stemRatio1 !== undefined ? settings.stemRatio1 : settings.stemRatio);
           const barX = drawX + (size - stemW) / 2;
           svg += `  <rect x="${barX}" y="${drawY}" width="${stemW}" height="${size}" fill="${settings.color1}" />\n`;
         } else {
           const cx = drawX + size / 2;
           const cy = drawY + size / 2;
           const R = size / 2;
-          const r = Math.max(0, R * (1 - settings.stemRatio * 1.5));
+          const stemVal = settings.stemRatio0 !== undefined ? settings.stemRatio0 : settings.stemRatio;
+          const r = Math.max(0, R * (1 - stemVal * 1.5));
           svg += `  <path d="M ${cx} ${cy - R} A ${R} ${R} 0 1 0 ${cx} ${cy + R} A ${R} ${R} 0 1 0 ${cx} ${cy - R} Z M ${cx} ${cy - r} A ${r} ${r} 0 1 1 ${cx} ${cy + r} A ${r} ${r} 0 1 1 ${cx} ${cy - r} Z" fill="${settings.color0}" fill-rule="evenodd" />\n`;
         }
       } 
       else if (settings.representationMode === 'glyphs') {
         const charSymbol = bit === 1 ? settings.glyph1 : settings.glyph0;
         const color = bit === 1 ? settings.color1 : settings.color0;
+        const family = bit === 1 ? (settings.fontFamily1 || settings.fontFamily) : (settings.fontFamily0 || settings.fontFamily);
         const tx = drawX + size / 2;
         const ty = drawY + size / 2 + (size * 0.1);
-        svg += `  <text x="${tx}" y="${ty}" fill="${color}" font-family="${settings.fontFamily.replace(/'/g, "")}" font-size="${size}px" font-weight="bold" text-anchor="middle" dominant-baseline="middle">${charSymbol}</text>\n`;
+        svg += `  <text x="${tx}" y="${ty}" fill="${color}" font-family="${family.replace(/'/g, "")}" font-size="${size}px" font-weight="bold" text-anchor="middle" dominant-baseline="middle">${charSymbol}</text>\n`;
       } 
       else if (settings.representationMode === 'images') {
         const bitImg = bit === 1 ? settings.img1 : settings.img0;
@@ -2174,12 +2661,12 @@ function exportFullSheetSVG() {
 // PAGE 2: THE FONT SPECIMENWEIGHTS & HOVER MAP
 // -------------------------------------------------------------
 const FONT_WEIGHT_MAP = {
-  "1": { name: "Thin", font: "BiType_Thin" },
-  "2": { name: "Light", font: "BiType_Light" },
-  "3": { name: "Regular", font: "BiType_Regular" },
-  "4": { name: "Bold", font: "BiType_Bold" },
-  "5": { name: "Base", font: "BiType_Base" },
-  "6": { name: "Matrix", font: "BiType_Matrix" }
+  "1": { name: "Matrix", font: "BiType_Matrix" },
+  "2": { name: "Thin", font: "BiType_Thin" },
+  "3": { name: "Light", font: "BiType_Light" },
+  "4": { name: "Regular", font: "BiType_Regular" },
+  "5": { name: "Bold", font: "BiType_Bold" },
+  "6": { name: "Base", font: "BiType_Base" }
 };
 
 function initFontPageLogic() {
@@ -2220,25 +2707,6 @@ function initFontPageLogic() {
     // Keep it sync
     DOM.specimenWeightText.textContent = e.target.value || "BITYPE SYSTEM";
   });
-
-  // Use Installed Font click listener
-  DOM.btnUseInstalledFont.addEventListener('click', () => {
-    const fontName = DOM.inputInstalledFont.value.trim();
-    if (!fontName) {
-      alert("Please enter a system font name.");
-      return;
-    }
-    
-    // Remove active state from all weight labels
-    DOM.weightLabels.forEach(lbl => lbl.classList.remove('active'));
-    
-    // Apply font family directly to the specimen board
-    DOM.specimenWeightText.style.fontFamily = `'${fontName}', var(--font-mono)`;
-    
-    // Ensure input textarea is visible (if it was hidden by Matrix mode)
-    DOM.specimenInputEdit.style.display = "block";
-    DOM.specimenWeightText.textContent = DOM.specimenInputEdit.value || "BITYPE SYSTEM";
-  });
   
   // 2. Interactive Character Hover Map
   const characters = Object.keys(BITYPE_ALPHABET);
@@ -2268,6 +2736,10 @@ function initFontPageLogic() {
   highlightCharacterInMap('A');
   const defaultBtn = [...DOM.charactersListGrid.children].find(child => child.textContent === 'A');
   if (defaultBtn) defaultBtn.classList.add('active');
+
+  // Set default weight to Matrix (index 1) on load
+  DOM.weightSlider.value = "1";
+  updateSpecimenWeight("1");
 }
 
 function highlightCharacterInMap(char) {
@@ -2478,6 +2950,618 @@ function initDesignerListeners() {
 }
 
 // -------------------------------------------------------------
+// GUIDED BUILDER FLOW
+// -------------------------------------------------------------
+function goToGuidedStep(stepNum) {
+  STATE.guidedStep = stepNum;
+  
+  // Update step indicators
+  for (let i = 1; i <= 5; i++) {
+    const ind = document.getElementById(`step-ind-${i}`);
+    if (ind) {
+      if (i < stepNum) {
+        ind.className = "step-indicator completed";
+      } else if (i === stepNum) {
+        ind.className = "step-indicator active";
+      } else {
+        ind.className = "step-indicator";
+      }
+    }
+  }
+
+  // Update step panes
+  for (let i = 1; i <= 5; i++) {
+    const pane = document.getElementById(`guided-pane-${i}`);
+    if (pane) {
+      if (i === stepNum) {
+        pane.classList.add('active');
+      } else {
+        pane.classList.remove('active');
+      }
+    }
+  }
+
+  // Handle specific pane entries
+  if (stepNum === 2) {
+    const subtext = document.getElementById('guided-source-desc-1');
+    if (subtext) {
+      if (STATE.guidedSource === 'font') subtext.textContent = "Choose a character and font family to represent cell state '1'.";
+      if (STATE.guidedSource === 'image') subtext.textContent = "Upload an image and adjust binarization threshold to trace cell state '1'.";
+      if (STATE.guidedSource === 'draw') subtext.textContent = "Adjust the stem weight ratio to define the geometric cell state '1'.";
+    }
+    const btnNext = document.getElementById('guided-next-2');
+    if (btnNext) {
+      btnNext.disabled = (STATE.guidedSource === 'image' && !STATE.guidedGlyph1File);
+    }
+    updateGuidedVectorPreview(1);
+  }
+  
+  if (stepNum === 3) {
+    const subtext = document.getElementById('guided-source-desc-0');
+    if (subtext) {
+      if (STATE.guidedSource === 'font') subtext.textContent = "Choose a character and font family to represent cell state '0'.";
+      if (STATE.guidedSource === 'image') subtext.textContent = "Upload an image and adjust binarization threshold to trace cell state '0'.";
+      if (STATE.guidedSource === 'draw') subtext.textContent = "Adjust the stem weight ratio to define the geometric cell state '0'.";
+    }
+    const btnNext = document.getElementById('guided-next-3');
+    if (btnNext) {
+      btnNext.disabled = (STATE.guidedSource === 'image' && !STATE.guidedGlyph0File);
+    }
+    updateGuidedVectorPreview(0);
+  }
+
+  if (stepNum === 4) {
+    // Copy guided properties to application settings
+    STATE.settings.representationMode = (STATE.guidedSource === 'font' ? 'glyphs' : STATE.guidedSource === 'image' ? 'images' : 'default');
+    
+    if (STATE.guidedSource === 'font') {
+      STATE.settings.glyph1 = STATE.guidedGlyph1Char;
+      STATE.settings.glyph0 = STATE.guidedGlyph0Char;
+      STATE.settings.fontFamily1 = STATE.guidedGlyph1FontFamily;
+      STATE.settings.fontFamily0 = STATE.guidedGlyph0FontFamily;
+      // Clear image assets
+      STATE.settings.img1 = null;
+      STATE.settings.img0 = null;
+    } else if (STATE.guidedSource === 'image') {
+      STATE.settings.img1 = STATE.guidedGlyph1File;
+      STATE.settings.img0 = STATE.guidedGlyph0File;
+      STATE.settings.threshold1 = STATE.guidedGlyph1Threshold;
+      STATE.settings.threshold0 = STATE.guidedGlyph0Threshold;
+      reCacheImages();
+    } else if (STATE.guidedSource === 'draw') {
+      STATE.settings.stemRatio1 = STATE.guidedGlyph1Stem;
+      STATE.settings.stemRatio0 = STATE.guidedGlyph0Stem;
+      // Clear image assets
+      STATE.settings.img1 = null;
+      STATE.settings.img0 = null;
+    }
+    
+    updateGuidedWorkspacePreview();
+  }
+}
+
+function resetGuidedFlow() {
+  STATE.guidedStep = 1;
+  STATE.guidedSource = "";
+  STATE.guidedGlyph1File = null;
+  STATE.guidedGlyph0File = null;
+  STATE.guidedGlyph1Threshold = 50;
+  STATE.guidedGlyph0Threshold = 50;
+  STATE.guidedGlyph1Stem = 0.25;
+  STATE.guidedGlyph0Stem = 0.25;
+  STATE.guidedGlyph1FontFamily = "'Space Mono', monospace";
+  STATE.guidedGlyph0FontFamily = "'Space Mono', monospace";
+  STATE.guidedGlyph1Char = "1";
+  STATE.guidedGlyph0Char = "0";
+
+  // Reset UI elements
+  const cards = ['font', 'image', 'draw'];
+  cards.forEach(src => {
+    const card = document.getElementById(`source-card-${src}`);
+    if (card) card.classList.remove('active');
+  });
+
+  const btnNext1 = document.getElementById('guided-next-1');
+  if (btnNext1) btnNext1.disabled = true;
+
+  [0, 1].forEach(index => {
+    const fileName = document.getElementById(`guided-file-name-${index}`);
+    if (fileName) fileName.textContent = "No file selected";
+
+    const threshSlider = document.getElementById(`guided-input-threshold-${index}`);
+    if (threshSlider) threshSlider.value = 50;
+    const threshVal = document.getElementById(`guided-val-threshold-${index}`);
+    if (threshVal) threshVal.textContent = "50";
+
+    const stemSlider = document.getElementById(`guided-input-stem-${index}`);
+    if (stemSlider) stemSlider.value = 0.25;
+    const stemVal = document.getElementById(`guided-val-stem-${index}`);
+    if (stemVal) stemVal.textContent = "0.25";
+
+    const charInput = document.getElementById(`guided-char-input-${index}`);
+    if (charInput) charInput.value = index === 1 ? "1" : "0";
+
+    const fontSelect = document.getElementById(`guided-select-font-${index}`);
+    if (fontSelect) fontSelect.value = "'Space Mono', monospace";
+
+    const fontNameDisplay = document.getElementById(`guided-font-name-${index}`);
+    if (fontNameDisplay) fontNameDisplay.textContent = "No file";
+
+    const alertContrast = document.getElementById(`guided-alert-contrast-${index}`);
+    if (alertContrast) alertContrast.style.display = "none";
+  });
+
+  goToGuidedStep(1);
+}
+
+function updateGuidedVectorPreview(index) {
+  const container = document.getElementById(`guided-vector-canvas-${index}`);
+  if (!container) return;
+  
+  container.innerHTML = "";
+  
+  if (STATE.guidedSource === 'draw') {
+    const stem = index === 1 ? STATE.guidedGlyph1Stem : STATE.guidedGlyph0Stem;
+    if (index === 1) {
+      const w = 100 * stem;
+      const x = (100 - w) / 2;
+      container.innerHTML = `<svg viewBox="0 0 100 100" style="width:100%; height:100%;"><rect x="${x}" y="10" width="${w}" height="80" fill="#ffffff" /></svg>`;
+    } else {
+      const R = 40;
+      const cx = 50;
+      const cy = 50;
+      const r = Math.max(0, R * (1 - stem * 1.5));
+      container.innerHTML = `<svg viewBox="0 0 100 100" style="width:100%; height:100%;"><path d="M ${cx} ${cy - R} A ${R} ${R} 0 1 0 ${cx} ${cy + R} A ${R} ${R} 0 1 0 ${cx} ${cy - R} Z M ${cx} ${cy - r} A ${r} ${r} 0 1 1 ${cx} ${cy + r} A ${r} ${r} 0 1 1 ${cx} ${cy - r} Z" fill="#ffffff" fill-rule="evenodd" /></svg>`;
+    }
+  } 
+  else if (STATE.guidedSource === 'font') {
+    const family = index === 1 ? STATE.guidedGlyph1FontFamily : STATE.guidedGlyph0FontFamily;
+    const char = index === 1 ? STATE.guidedGlyph1Char : STATE.guidedGlyph0Char;
+    container.innerHTML = `<svg viewBox="0 0 100 100" style="width:100%; height:100%;"><text x="50" y="55" font-family="${family.replace(/'/g, "")}" font-size="64px" font-weight="bold" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">${char}</text></svg>`;
+  } 
+  else if (STATE.guidedSource === 'image') {
+    const img = index === 1 ? STATE.guidedGlyph1File : STATE.guidedGlyph0File;
+    if (img) {
+      const threshold = index === 1 ? STATE.guidedGlyph1Threshold : STATE.guidedGlyph0Threshold;
+      const paths = getTraceSvgPathsForImage(img, threshold);
+      let pathTags = "";
+      paths.forEach(d => {
+        pathTags += `<path d="${d}" fill="#ffffff" />`;
+      });
+      container.innerHTML = `<svg viewBox="0 0 128 128" style="width:100%; height:100%;">${pathTags}</svg>`;
+    } else {
+      container.innerHTML = `<div style="font-size:11px; color:var(--color-text-secondary); text-align:center; padding: 1rem;"><i class="ti ti-photo" style="font-size:32px; display:block; margin: 0 auto 0.5rem; color:#444;"></i>NO IMAGE UPLOADED</div>`;
+    }
+  }
+}
+
+function updateGuidedWorkspacePreview() {
+  const container = document.getElementById('guided-svg-container');
+  const sampleTextArea = document.getElementById('guided-sample-text-area');
+  if (!container || !sampleTextArea) return;
+  
+  const text = sampleTextArea.value || "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG";
+  
+  if (STATE.settings.representationMode === 'images') {
+    reCacheImages();
+  }
+  
+  const result = generateSVGData(text, STATE.settings);
+  container.innerHTML = result.svg;
+  
+  const alertMonochrome = document.getElementById('guided-alert-monochrome');
+  if (alertMonochrome) {
+    const hasCustomColors = STATE.settings.color1 !== '#ffffff' || 
+                            STATE.settings.color0 !== '#ffffff' || 
+                            STATE.settings.cellBg ||
+                            (STATE.settings.borderColor !== '#222222' && (STATE.settings.outerBorders || STATE.settings.innerBorders));
+    if (hasCustomColors) {
+      alertMonochrome.style.display = 'block';
+    } else {
+      alertMonochrome.style.display = 'none';
+    }
+  }
+}
+
+function handleGuidedFontUpload(inputEl, displayEl, selectEl, index) {
+  const file = inputEl.files[0];
+  if (!file) return;
+  
+  displayEl.textContent = file.name;
+  
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    try {
+      const buffer = e.target.result;
+      const fontName = `GuidedFont_${index}_${Date.now()}`;
+      const fontFace = new FontFace(fontName, buffer);
+      
+      showProcessing("LOADING UPLOADED FONT...");
+      const loadedFace = await fontFace.load();
+      document.fonts.add(loadedFace);
+      
+      let opt = Array.from(selectEl.options).find(o => o.value === fontName);
+      if (!opt) {
+        opt = document.createElement('option');
+        opt.value = fontName;
+        opt.textContent = `Uploaded: ${file.name}`;
+        selectEl.appendChild(opt);
+      }
+      selectEl.value = fontName;
+      
+      if (index === 1) {
+        STATE.guidedGlyph1FontFamily = fontName;
+      } else {
+        STATE.guidedGlyph0FontFamily = fontName;
+      }
+      
+      updateGuidedVectorPreview(index);
+      hideProcessing();
+    } catch (err) {
+      alert("Error loading font: " + err.message);
+      hideProcessing();
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function handleGuidedImageUpload(file, index) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onload = () => {
+      if (index === 1) {
+        STATE.guidedGlyph1File = img;
+        const fileNameEl = document.getElementById('guided-file-name-1');
+        if (fileNameEl) fileNameEl.textContent = file.name;
+        const btnNext = document.getElementById('guided-next-2');
+        if (btnNext) btnNext.disabled = false;
+      } else {
+        STATE.guidedGlyph0File = img;
+        const fileNameEl = document.getElementById('guided-file-name-0');
+        if (fileNameEl) fileNameEl.textContent = file.name;
+        const btnNext = document.getElementById('guided-next-3');
+        if (btnNext) btnNext.disabled = false;
+      }
+      updateGuidedVectorPreview(index);
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function setupDropzone(dropzoneId, fileInputId, index) {
+  const dropzone = document.getElementById(dropzoneId);
+  const fileInput = document.getElementById(fileInputId);
+  
+  if (!dropzone || !fileInput) return;
+  
+  // Click to browse file
+  dropzone.addEventListener('click', () => fileInput.click());
+  
+  fileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    handleGuidedImageUpload(file, index);
+  });
+  
+  // Drag over drop area
+  dropzone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropzone.classList.add('dragover');
+  });
+  
+  // Drag leaves drop area
+  dropzone.addEventListener('dragleave', () => {
+    dropzone.classList.remove('dragover');
+  });
+  
+  // Drop file
+  dropzone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropzone.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    handleGuidedImageUpload(file, index);
+  });
+}
+
+function initGuidedBuilder() {
+  // Bind Startup page mode selection cards (bind to the card wrappers to make the entire card clickable)
+  const cardGuided = document.getElementById('card-guided-builder');
+  const cardAdvanced = document.getElementById('card-advanced-creator');
+  
+  if (cardGuided) {
+    cardGuided.addEventListener('click', () => {
+      showProcessing("INITIALIZING GUIDED WORKSPACE...");
+      setTimeout(() => {
+        resetGuidedFlow();
+        navigateTo('guided');
+        hideProcessing();
+      }, 600);
+    });
+  }
+  
+  if (cardAdvanced) {
+    cardAdvanced.addEventListener('click', () => {
+      showProcessing("LOADING TYPOGRAPHY WORKSPACE...");
+      setTimeout(() => {
+        navigateTo('creator');
+        hideProcessing();
+      }, 600);
+    });
+  }
+
+  // Bind source select cards (Step 1)
+  const cards = ['font', 'image', 'draw'];
+  cards.forEach(src => {
+    const card = document.getElementById(`source-card-${src}`);
+    if (card) {
+      card.addEventListener('click', () => {
+        cards.forEach(s => {
+          const c = document.getElementById(`source-card-${s}`);
+          if (c) c.classList.remove('active');
+        });
+        
+        card.classList.add('active');
+        STATE.guidedSource = src;
+        
+        const btnNext = document.getElementById('guided-next-1');
+        if (btnNext) btnNext.disabled = false;
+        
+        // Hide/Show correct configuration blocks
+        [0, 1].forEach(i => {
+          const ctrlFont = document.getElementById(`guided-ctrl-font-${i}`);
+          const ctrlImg = document.getElementById(`guided-ctrl-image-${i}`);
+          const ctrlDraw = document.getElementById(`guided-ctrl-draw-${i}`);
+          
+          if (ctrlFont) ctrlFont.style.display = src === 'font' ? 'block' : 'none';
+          if (ctrlImg) ctrlImg.style.display = src === 'image' ? 'block' : 'none';
+          if (ctrlDraw) ctrlDraw.style.display = src === 'draw' ? 'block' : 'none';
+        });
+      });
+    }
+  });
+
+  // Step 2 & 3: Bind Inputs
+  [0, 1].forEach(index => {
+    // Threshold slider
+    const slider = document.getElementById(`guided-input-threshold-${index}`);
+    const valEl = document.getElementById(`guided-val-threshold-${index}`);
+    const alertEl = document.getElementById(`guided-alert-contrast-${index}`);
+    if (slider) {
+      const updateVal = () => {
+        const val = parseInt(slider.value);
+        if (index === 1) {
+          STATE.guidedGlyph1Threshold = val;
+        } else {
+          STATE.guidedGlyph0Threshold = val;
+        }
+        if (valEl) valEl.textContent = val;
+        if (alertEl) {
+          alertEl.style.display = (val < 30 || val > 70) ? 'block' : 'none';
+        }
+        updateGuidedVectorPreview(index);
+      };
+      slider.addEventListener('input', updateVal);
+      slider.addEventListener('change', updateVal);
+    }
+    
+    // Select font family
+    const fontSelect = document.getElementById(`guided-select-font-${index}`);
+    if (fontSelect) {
+      fontSelect.addEventListener('change', () => {
+        if (index === 1) {
+          STATE.guidedGlyph1FontFamily = fontSelect.value;
+        } else {
+          STATE.guidedGlyph0FontFamily = fontSelect.value;
+        }
+        updateGuidedVectorPreview(index);
+      });
+    }
+    
+    // Upload font
+    const fontUpload = document.getElementById(`guided-font-upload-${index}`);
+    const fontNameDisplay = document.getElementById(`guided-font-name-${index}`);
+    if (fontUpload && fontNameDisplay && fontSelect) {
+      fontUpload.addEventListener('change', () => {
+        handleGuidedFontUpload(fontUpload, fontNameDisplay, fontSelect, index);
+      });
+    }
+    
+    // Character input
+    const charInput = document.getElementById(`guided-char-input-${index}`);
+    if (charInput) {
+      charInput.addEventListener('input', () => {
+        const val = charInput.value.substring(0, 1);
+        charInput.value = val;
+        if (index === 1) {
+          STATE.guidedGlyph1Char = val;
+        } else {
+          STATE.guidedGlyph0Char = val;
+        }
+        updateGuidedVectorPreview(index);
+      });
+    }
+    
+    // Stem ratio slider
+    const stemSlider = document.getElementById(`guided-input-stem-${index}`);
+    const stemValEl = document.getElementById(`guided-val-stem-${index}`);
+    if (stemSlider) {
+      stemSlider.addEventListener('input', () => {
+        const val = parseFloat(stemSlider.value);
+        if (index === 1) {
+          STATE.guidedGlyph1Stem = val;
+        } else {
+          STATE.guidedGlyph0Stem = val;
+        }
+        if (stemValEl) stemValEl.textContent = val.toFixed(2);
+        updateGuidedVectorPreview(index);
+      });
+    }
+    
+    // Setup dropzones
+    setupDropzone(`guided-dropzone-${index}`, `guided-file-${index}`, index);
+  });
+
+  // Step 4: Sliders and Color Inputs
+  const bindGuidedSlider = (sliderId, valId, settingsKey, isFloat = false) => {
+    const slider = document.getElementById(sliderId);
+    const valEl = document.getElementById(valId);
+    if (slider) {
+      slider.addEventListener('input', () => {
+        const val = isFloat ? parseFloat(slider.value) : parseInt(slider.value);
+        STATE.settings[settingsKey] = val;
+        if (valEl) valEl.textContent = val;
+        updateGuidedWorkspacePreview();
+      });
+    }
+  };
+  bindGuidedSlider('guided-input-cell-size', 'guided-val-cell-size', 'cellSize');
+  bindGuidedSlider('guided-input-cell-padding', 'guided-val-cell-padding', 'cellPadding', true);
+  bindGuidedSlider('guided-input-letter-spacing', 'guided-val-letter-spacing', 'letterSpacing');
+
+  const bindGuidedColor = (colorId, hexId, settingsKey) => {
+    const picker = document.getElementById(colorId);
+    const hexEl = document.getElementById(hexId);
+    if (picker) {
+      picker.addEventListener('input', () => {
+        const val = picker.value;
+        STATE.settings[settingsKey] = val;
+        if (hexEl) hexEl.textContent = val;
+        updateGuidedWorkspacePreview();
+      });
+    }
+  };
+  bindGuidedColor('guided-color-bg', 'guided-hex-bg', 'bg');
+  bindGuidedColor('guided-color-glyph1', 'guided-hex-glyph1', 'color1');
+  bindGuidedColor('guided-color-glyph0', 'guided-hex-glyph0', 'color0');
+  bindGuidedColor('guided-color-border', 'guided-hex-border', 'borderColor');
+  bindGuidedColor('guided-color-cell-bg', 'guided-hex-cell-bg', 'cellBgColor');
+
+  const bindGuidedToggle = (toggleId, settingsKey, extraFn) => {
+    const toggle = document.getElementById(toggleId);
+    if (toggle) {
+      toggle.addEventListener('change', () => {
+        STATE.settings[settingsKey] = toggle.checked;
+        if (extraFn) extraFn(toggle.checked);
+        updateGuidedWorkspacePreview();
+      });
+    }
+  };
+  bindGuidedToggle('guided-toggle-outer-borders', 'outerBorders');
+  bindGuidedToggle('guided-toggle-inner-borders', 'innerBorders');
+  bindGuidedToggle('guided-toggle-cell-bg', 'cellBg', (checked) => {
+    const cellBgCol = document.getElementById('guided-col-cell-bg-color');
+    if (cellBgCol) cellBgCol.style.display = checked ? 'block' : 'none';
+  });
+
+  const sampleTextArea = document.getElementById('guided-sample-text-area');
+  if (sampleTextArea) {
+    sampleTextArea.addEventListener('input', () => {
+      updateGuidedWorkspacePreview();
+    });
+  }
+
+  // Toggle Advanced settings button
+  const btnToggleAdv = document.getElementById('guided-btn-toggle-advanced');
+  const advSettings = document.getElementById('guided-advanced-settings');
+  if (btnToggleAdv && advSettings) {
+    btnToggleAdv.addEventListener('click', () => {
+      if (advSettings.style.display === 'none') {
+        advSettings.style.display = 'block';
+        btnToggleAdv.textContent = 'HIDE ADVANCED GEOMETRY OPTIONS';
+      } else {
+        advSettings.style.display = 'none';
+        btnToggleAdv.textContent = 'SHOW ADVANCED GEOMETRY OPTIONS';
+      }
+    });
+  }
+
+  // Back/Next Button hooks for wizard transitions
+  const btnBackStartup1 = document.getElementById('guided-back-startup-1');
+  if (btnBackStartup1) {
+    btnBackStartup1.addEventListener('click', () => navigateTo('startup'));
+  }
+  
+  const btnNext1 = document.getElementById('guided-next-1');
+  if (btnNext1) {
+    btnNext1.addEventListener('click', () => goToGuidedStep(2));
+  }
+
+  const btnPrev2 = document.getElementById('guided-prev-btn-2');
+  if (btnPrev2) {
+    btnPrev2.addEventListener('click', () => goToGuidedStep(1));
+  }
+  
+  const btnNext2 = document.getElementById('guided-next-2');
+  if (btnNext2) {
+    btnNext2.addEventListener('click', () => goToGuidedStep(3));
+  }
+
+  const btnPrev3 = document.getElementById('guided-prev-btn-3');
+  if (btnPrev3) {
+    btnPrev3.addEventListener('click', () => goToGuidedStep(2));
+  }
+  
+  const btnNext3 = document.getElementById('guided-next-3');
+  if (btnNext3) {
+    btnNext3.addEventListener('click', () => goToGuidedStep(4));
+  }
+
+  const btnPrev4 = document.getElementById('guided-prev-btn-4');
+  if (btnPrev4) {
+    btnPrev4.addEventListener('click', () => goToGuidedStep(3));
+  }
+  
+  const btnNext4 = document.getElementById('guided-next-4');
+  if (btnNext4) {
+    btnNext4.addEventListener('click', () => goToGuidedStep(5));
+  }
+
+  const btnPrev5 = document.getElementById('guided-prev-btn-5');
+  if (btnPrev5) {
+    btnPrev5.addEventListener('click', () => goToGuidedStep(4));
+  }
+
+  // Step 5: Export Buttons
+  const btnExportTtf = document.getElementById('guided-btn-export-ttf');
+  if (btnExportTtf) {
+    btnExportTtf.addEventListener('click', () => {
+      const guidedFontNameInput = document.getElementById('guided-input-font-name');
+      if (guidedFontNameInput && DOM.inputFontName) {
+        DOM.inputFontName.value = guidedFontNameInput.value;
+      }
+      triggerTtfExportFlow();
+    });
+  }
+
+  const btnExportPng = document.getElementById('guided-btn-export-png');
+  if (btnExportPng) {
+    btnExportPng.addEventListener('click', () => {
+      exportFullSheetPNG();
+    });
+  }
+
+  const btnExportSvg = document.getElementById('guided-btn-export-svg');
+  if (btnExportSvg) {
+    btnExportSvg.addEventListener('click', () => {
+      exportFullSheetSVG();
+    });
+  }
+
+  const btnFinished = document.getElementById('guided-btn-finished');
+  if (btnFinished) {
+    btnFinished.addEventListener('click', () => {
+      showProcessing("CLEANING WORKSPACE...");
+      setTimeout(() => {
+        navigateTo('startup');
+        hideProcessing();
+      }, 500);
+    });
+  }
+}
+
+// -------------------------------------------------------------
 // INITIALIZATION
 // -------------------------------------------------------------
 window.addEventListener('DOMContentLoaded', () => {
@@ -2507,6 +3591,181 @@ window.addEventListener('DOMContentLoaded', () => {
   renderDesignerGrid();
   initDesignerListeners();
   
+  // 7.7. Initialize guided builder flow
+  initGuidedBuilder();
+  
   // 8. Trigger Initial Draw of Creator Canvas text
   drawCreatorText();
+  
+  // 9. Initialize startup logo hover animation and Matrix background rain
+  initStartupLogoHover();
 });
+
+function initStartupLogoHover() {
+  const logoEl = document.querySelector('.startup-logo-matrix');
+  if (!logoEl) return;
+  
+  const bgFonts = [
+    "BG_BiType_Arial",
+    "BG_BiType_Custom_10",
+    "BG_BiType_Custom_27",
+    "BG_BiType_Custom_28",
+    "BG_BiType_Custom_29",
+    "BG_BiType_Custom_cloes11",
+    "BG_BiType_Custom_color9",
+    "BG_BiType_Guided_2",
+    "BG_BiType_Guided",
+    "BG_BiType_ULTRA",
+    "BG_BiType_comic",
+    "BG_BiType_courriernew",
+    "BG_BiType_georgia",
+    "BG_BiType_impact",
+    "BG_BiType_system",
+    "BG_ComicRelief_Regular",
+    "BG_ComicRelief_Bold",
+    "BG_Doto_Variable",
+    "BG_Ultra_Regular"
+  ];
+  
+  // Matrix background setup
+  const canvas = document.getElementById('matrix-bg-canvas');
+  let matrixInterval = null;
+  let canvasCtx = null;
+  
+  if (canvas) {
+    canvasCtx = canvas.getContext('2d');
+  }
+  
+  // Matrix rain state variables
+  let columns = 0;
+  let drops = [];
+  let columnFonts = [];
+  let columnSpeeds = [];
+  const shapeChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".split("");
+  const textChars = "01".split("");
+  
+  function resizeCanvas() {
+    if (canvas) {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      columns = Math.floor(canvas.width / 18); // tighter clean spacing (18px columns)
+      drops = [];
+      columnFonts = [];
+      columnSpeeds = [];
+      for (let x = 0; x < columns; x++) {
+        drops[x] = Math.random() * -60; // random staggered start offsets above screen
+        columnFonts[x] = bgFonts[Math.floor(Math.random() * bgFonts.length)];
+        columnSpeeds[x] = 0.6 + Math.random() * 1.4;
+      }
+    }
+  }
+  
+  window.addEventListener('resize', resizeCanvas);
+  
+  function drawMatrix() {
+    if (!canvasCtx || !canvas) return;
+    
+    // Minimal glitch fade (translucent dark background)
+    canvasCtx.fillStyle = 'rgba(5, 5, 5, 0.15)';
+    canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    for (let i = 0; i < drops.length; i++) {
+      const font = columnFonts[i];
+      const isShape = font.includes("BiType");
+      const charSet = isShape ? shapeChars : textChars;
+      
+      const charSize = Math.random() > 0.97 ? 16 : 13; // clean, minimal size variation
+      canvasCtx.font = `${charSize}px "${font}", monospace`;
+      
+      // Jitter offset shifts horizontal positions slightly at random intervals
+      const jitter = (Math.random() > 0.985) ? (Math.random() - 0.5) * 15 : 0; // clean minimal horizontal offset
+      const x = (i * 18) + jitter;
+      const y = drops[i] * 18;
+      
+      // Pick random glyph
+      const text = charSet[Math.floor(Math.random() * charSet.length)];
+      
+      // Experimental glitch features
+      // 1. Chromatic aberration (red/cyan channel offset) on 3% of elements
+      const colorRand = Math.random();
+      if (colorRand > 0.97) {
+        canvasCtx.fillStyle = 'rgba(255, 0, 0, 0.2)';
+        canvasCtx.fillText(text, x - 1.5, y);
+        canvasCtx.fillStyle = 'rgba(0, 255, 255, 0.2)';
+        canvasCtx.fillText(text, x + 1.5, y);
+      }
+      
+      // 2. Glitch data block (rarely draw filled rect instead of text)
+      if (colorRand > 0.992) {
+        canvasCtx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+        canvasCtx.fillRect(x, y - 10, 10, 10);
+      } else {
+        // Base color selection (grayscale minimal tones)
+        if (colorRand > 0.985) {
+          canvasCtx.fillStyle = 'rgba(255, 255, 255, 0.85)'; // high brightness flash
+        } else if (colorRand > 0.88) {
+          canvasCtx.fillStyle = 'rgba(255, 255, 255, 0.25)'; // medium brightness
+        } else {
+          canvasCtx.fillStyle = 'rgba(255, 255, 255, 0.05)'; // minimal faint code rain
+        }
+        canvasCtx.fillText(text, x, y);
+      }
+      
+      // 3. Faint grid line flickers (very rare)
+      if (Math.random() > 0.998) {
+        canvasCtx.strokeStyle = 'rgba(255, 255, 255, 0.015)';
+        canvasCtx.lineWidth = 1;
+        canvasCtx.beginPath();
+        if (Math.random() > 0.5) {
+          canvasCtx.moveTo(0, y);
+          canvasCtx.lineTo(canvas.width, y);
+        } else {
+          canvasCtx.moveTo(x, 0);
+          canvasCtx.lineTo(x, canvas.height);
+        }
+        canvasCtx.stroke();
+      }
+      
+      // Reset drop instantly when it goes off screen with a random stagger above screen
+      if (y > canvas.height) {
+        drops[i] = -Math.random() * 15;
+        columnFonts[i] = bgFonts[Math.floor(Math.random() * bgFonts.length)];
+        columnSpeeds[i] = 0.6 + Math.random() * 1.4;
+      }
+      
+      drops[i] += columnSpeeds[i] * 0.75; // smooth falling speed
+    }
+  }
+  
+  function startMatrixAnimation() {
+    if (canvas) {
+      resizeCanvas();
+      canvas.style.opacity = '0.35'; // soft minimal visibility
+      if (matrixInterval) clearInterval(matrixInterval);
+      matrixInterval = setInterval(drawMatrix, 33);
+    }
+  }
+  
+  function stopMatrixAnimation() {
+    if (canvas) {
+      canvas.style.opacity = '0';
+      setTimeout(() => {
+        if (canvas.style.opacity === '0' && matrixInterval) {
+          clearInterval(matrixInterval);
+          matrixInterval = null;
+          if (canvasCtx) {
+            canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+          }
+        }
+      }, 1500);
+    }
+  }
+  
+  logoEl.addEventListener('mouseenter', () => {
+    startMatrixAnimation();
+  });
+  
+  logoEl.addEventListener('mouseleave', () => {
+    stopMatrixAnimation();
+  });
+}

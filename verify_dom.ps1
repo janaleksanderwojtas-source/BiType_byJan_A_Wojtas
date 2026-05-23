@@ -27,7 +27,7 @@ if ($missing.Count -gt 0) {
 }
 
 # Check specific buttons
-$buttons = @('btn-export-png', 'btn-export-svg', 'btn-export-ttf', 'btn-export-sheet-png', 'btn-export-sheet-svg', 'btn-use-installed-font')
+$buttons = @('btn-export-png', 'btn-export-svg', 'btn-export-ttf', 'btn-export-sheet-png', 'btn-export-sheet-svg')
 foreach ($btn in $buttons) {
     $exists = $btn -in $htmlIds
     Write-Output "  $($btn): $(if ($exists) { 'Found' } else { 'MISSING' })"
